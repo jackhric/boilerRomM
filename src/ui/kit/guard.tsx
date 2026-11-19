@@ -9,7 +9,7 @@ export class Guard extends Component<{ what: string; children: ReactNode }, { er
   }
   render() {
     if (this.state.error) {
-      return <div style={{ padding: `80px ${GUTTER}px`, color: C.title }}>ChickenTender could not draw {this.props.what}: {this.state.error}</div>;
+      return <div style={{ padding: `80px ${GUTTER}px`, color: C.title }}>boilerRomM could not draw {this.props.what}: {this.state.error}</div>;
     }
     return this.props.children;
   }

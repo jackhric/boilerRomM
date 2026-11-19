@@ -20,10 +20,10 @@ function failed(name: string, err: unknown) {
   const h = healthOf(name);
   h.failures++;
   h.last = err instanceof Error ? err.message : String(err);
-  if (h.failures === 1) console.warn(`[ChickenTender] hook "${name}" failed, Steam's own behaviour used:`, err);
+  if (h.failures === 1) console.warn(`[boilerRomM] hook "${name}" failed, Steam's own behaviour used:`, err);
   if (h.failures >= MAX_FAILURES && !h.off) {
     h.off = true;
-    console.warn(`[ChickenTender] hook "${name}" switched off after ${h.failures} failures`);
+    console.warn(`[boilerRomM] hook "${name}" switched off after ${h.failures} failures`);
   }
 }
 

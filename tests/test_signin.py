@@ -2,9 +2,9 @@ import json
 import logging
 
 
-from chickentender import signin as signin_mod
-from chickentender.app import App
-from chickentender.signin import JS_CREATE, JS_PREFS, OPENID_URL, SgdbSignin
+from boilerromm import signin as signin_mod
+from boilerromm.app import App
+from boilerromm.signin import JS_CREATE, JS_PREFS, OPENID_URL, SgdbSignin
 
 KEY = "0" * 32
 SGDB = "https://www.steamgriddb.com/"

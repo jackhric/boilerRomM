@@ -1,4 +1,4 @@
-// Everything ChickenTender does to Steam itself, and the only module the rest of the app imports from here.
+// Everything boilerRomM does to Steam itself, and the only module the rest of the app imports from here.
 // README.md in this folder lists each hook, what it touches and what keeps it away from other games.
 import { InstalledGame, setGames, TrackedGame } from "./core/games";
 import { hookHealth } from "./core/intercept";
@@ -62,5 +62,5 @@ export function steamProgress(p: { appid: number; done_bytes: number; total_byte
   if (p.status === "downloading") setDownloadProgress(p.appid, p.done_bytes, p.total_bytes);
 }
 
-/** Which hooks are applied and whether any has failed: `__chickenTender.steam()` in the console. */
+/** Which hooks are applied and whether any has failed: `__boilerRomM.steam()` in the console. */
 export const steamDiagnostics = () => ({ applied: activeTweaks(), hooks: hookHealth() });

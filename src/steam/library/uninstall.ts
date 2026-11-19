@@ -47,7 +47,7 @@ export function installUninstallRouting(uninstall: (game: TrackedGame) => unknow
     (args) => splitUninstall(args[0]).mine.length > 0,
     (args) => {
       const { mine, rest } = splitUninstall(args[0]);
-      for (const g of mine) void Promise.resolve(uninstall(g)).catch((err) => console.warn("[ChickenTender] uninstall failed:", err));
+      for (const g of mine) void Promise.resolve(uninstall(g)).catch((err) => console.warn("[boilerRomM] uninstall failed:", err));
       if (!rest.length) return undefined;
       args[0] = rest;
       return PASS;

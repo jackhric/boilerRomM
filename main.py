@@ -2,7 +2,7 @@ import json
 import os
 
 import decky
-from chickentender.app import App
+from boilerromm.app import App
 
 
 def _version() -> str:
@@ -19,9 +19,9 @@ class Plugin:
     async def _main(self):
         self.app = App(os.path.join(decky.DECKY_PLUGIN_SETTINGS_DIR, "settings.json"), _version(),
                        decky.DECKY_USER_HOME, decky.emit, decky.logger, data_dir=decky.DECKY_PLUGIN_RUNTIME_DIR)
-        self.app.install_launcher(os.path.join(decky.DECKY_PLUGIN_DIR, "bin", "chickentender-launch"), decky.DECKY_PLUGIN_RUNTIME_DIR)
+        self.app.install_launcher(os.path.join(decky.DECKY_PLUGIN_DIR, "bin", "boilerromm-launch"), decky.DECKY_PLUGIN_RUNTIME_DIR)
         await self.app.start()
-        decky.logger.info("ChickenTender %s started", self.app.version)
+        decky.logger.info("boilerRomM %s started", self.app.version)
 
     async def _unload(self):
         await self.app.stop()

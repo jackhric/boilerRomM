@@ -23,7 +23,7 @@ export function start(onStateChange: (next: State, previous: State | undefined) 
   });
   const offProgress = onProgress((p) => {
     steamProgress(p);
-    toastOutcome(p, latest?.library.games.find((g) => g.rom_id === p.rom_id)?.name ?? "ChickenTender");
+    toastOutcome(p, latest?.library.games.find((g) => g.rom_id === p.rom_id)?.name ?? "boilerRomM");
     // A multi-file game's launch file is only known once it is on disk.
     if (p.status === "done" && p.appid) {
       void launchTarget(p.rom_id)
@@ -40,9 +40,9 @@ export function start(onStateChange: (next: State, previous: State | undefined) 
     .catch(() => {});
   // Test hook for the Decky Toolkit (cef_evaluate): the same calls the UI makes.
   // publish feeds the Downloads page a made-up list (e.g. a download held at 40%) until the next backend event.
-  (window as any).__chickenTender = { download, remove: removeFromDevice, getState, publish: publishDownloads, steam: steamDiagnostics };
+  (window as any).__boilerRomM = { download, remove: removeFromDevice, getState, publish: publishDownloads, steam: steamDiagnostics };
   return () => {
-    delete (window as any).__chickenTender;
+    delete (window as any).__boilerRomM;
     repair.stop();
     stopSteam();
     offState();

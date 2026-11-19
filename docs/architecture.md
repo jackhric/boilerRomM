@@ -1,6 +1,6 @@
 # Architecture
 
-ChickenTender shows a [RomM](https://romm.app) library inside Steam's Big Picture UI, downloads what you pick into
+boilerRomM shows a [RomM](https://romm.app) library inside Steam's Big Picture UI, downloads what you pick into
 RetroDECK's ROM folder, and makes each installed game behave like a Steam game: a library entry, a row in
 Settings > Storage, Uninstall, and Steam's Downloads page while it downloads.
 
@@ -11,12 +11,12 @@ Settings > Storage, Uninstall, and Steam's Downloads page while it downloads.
   files RomM listed and their sizes. The disk is only ever checked against it, so "installed" means every file is
   there in full, and a download cut off by a restart continues afterwards.
 - **One state, one event.** The backend owns one snapshot (`App.state()`); every command returns it and every
-  change pushes it as `chickentender_state`. Download progress goes out separately (`chickentender_progress`).
+  change pushes it as `boilerromm_state`. Download progress goes out separately (`boilerromm_progress`).
 - **Steam is touched in one place.** Everything that reaches into Steam lives in `src/steam`, acts only on our own
   games and can be undone. See [src/steam/README.md](../src/steam/README.md).
 - **Nothing secret typed on the device.** Pairing uses RomM's device code flow; the token lives in a 0600 file.
 
-## Backend (`main.py`, `py_modules/chickentender/`)
+## Backend (`main.py`, `py_modules/boilerromm/`)
 
 `main.py` is the list of calls the frontend can make; each forwards to `App`. Nothing under `py_modules/` imports
 `decky`, so the package runs in tests.
@@ -37,7 +37,7 @@ Settings > Storage, Uninstall, and Steam's Downloads page while it downloads.
 | `retrodeck.py` | read-only view of the RetroDECK install |
 
 Files on the device, all under Decky's settings and runtime folders for the plugin: `settings.json`,
-`installs.json`, `shortcuts.json`, `sgdb/` (art cache), `icons/`, and `chickentender-launch`, which every Steam
+`installs.json`, `shortcuts.json`, `sgdb/` (art cache), `icons/`, and `boilerromm-launch`, which every Steam
 shortcut runs. These paths, and the plugin's name they derive from, must not change: existing shortcuts and
 records depend on them.
 
@@ -57,7 +57,7 @@ records depend on them.
 
 ```sh
 pnpm typecheck && pnpm test && pnpm build   # frontend: types, tests/{steam,domain,app}, bundle
-uv run ruff check py_modules/chickentender main.py tests && uv run pytest   # backend
+uv run ruff check py_modules/boilerromm main.py tests && uv run pytest   # backend
 ```
 
 `tests/test_contract.py` fails when the frontend and backend disagree on a call name, an event name or the keys

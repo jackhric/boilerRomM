@@ -4,12 +4,12 @@ import os
 
 import pytest
 
-from chickentender import ledger as L
-from chickentender.app import App
-from chickentender.downloads import Downloader
-from chickentender.install import InstallLocation
-from chickentender.ledger import Install, Ledger
-from chickentender.library import Game
+from boilerromm import ledger as L
+from boilerromm.app import App
+from boilerromm.downloads import Downloader
+from boilerromm.install import InstallLocation
+from boilerromm.ledger import Install, Ledger
+from boilerromm.library import Game
 from test_downloads import FakeClient, FakeResponse
 
 MULTI = {"fs_path": "roms/psx", "fs_name": "G (USA)", "files": [

@@ -4,7 +4,7 @@
 export type Undo = () => void;
 export type Apply = (track: (undo: Undo) => void) => Undo | void;
 
-const LOG = "[ChickenTender]";
+const LOG = "[boilerRomM]";
 const warned = new Set<string>();
 const live = new Map<number, { name: string; undo: Undo }>();
 let nextId = 1;
@@ -54,7 +54,7 @@ export function activeTweaks(): string[] {
   return [...live.values()].map((t) => t.name);
 }
 
-const KEY = "__chickenTenderSteam";
+const KEY = "__boilerRomMSteam";
 const api = { restoreAll };
 
 /** Undoes every tweak still applied, newest first. Never throws. */

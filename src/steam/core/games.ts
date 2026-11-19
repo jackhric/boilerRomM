@@ -43,7 +43,7 @@ export function setGames(nextTracked: TrackedGame[], nextInstalled: InstalledGam
     try {
       l();
     } catch (err) {
-      console.warn("[ChickenTender] games listener:", err);
+      console.warn("[boilerRomM] games listener:", err);
     }
   }
 }

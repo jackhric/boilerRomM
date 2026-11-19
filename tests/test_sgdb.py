@@ -5,10 +5,10 @@ import os
 
 import pytest
 
-from chickentender.app import App
-from chickentender.artwork import ArtCache, ArtPrefetch
-from chickentender.library import Game
-from chickentender.sgdb import API, SgdbClient, SgdbError, best_icon, image_format
+from boilerromm.app import App
+from boilerromm.artwork import ArtCache, ArtPrefetch
+from boilerromm.library import Game
+from boilerromm.sgdb import API, SgdbClient, SgdbError, best_icon, image_format
 
 KEY = "secret-key-123"
 PNG = b"\x89PNG\r\n\x1a\n" + b"p" * 20
@@ -76,7 +76,7 @@ def client(routes, sleeps=None):
         if sleeps is not None:
             sleeps.append(s)
     session = FakeSession(routes)
-    return SgdbClient(KEY, lambda: session, "ChickenTender/1.0", sleep=sleep), session
+    return SgdbClient(KEY, lambda: session, "boilerRomM/1.0", sleep=sleep), session
 
 
 def assets_routes(gid=42):
@@ -100,7 +100,7 @@ async def test_pick_assets_filters_and_choices():
                                        "logo": "https://c/logo", "icon": "https://c/icon-256"}
     assert len(s.calls) == 5
     for _path, params, headers in s.calls:
-        assert headers["Authorization"] == f"Bearer {KEY}" and headers["User-Agent"] == "ChickenTender/1.0"
+        assert headers["Authorization"] == f"Bearer {KEY}" and headers["User-Agent"] == "boilerRomM/1.0"
         assert params["types"] == "static" and params["nsfw"] == params["humor"] == params["epilepsy"] == "false"
         assert params["limit"] == "10"
     by_path = {p: params for p, params, _ in s.calls if not p.startswith("/grids")}

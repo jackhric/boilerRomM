@@ -38,7 +38,7 @@ class DownloadsBoundary extends Component<Props, { error?: string }> {
       <div style={{ padding: "60px 40px", display: "flex", flexDirection: "column", gap: 16, maxWidth: 640 }}>
         <div style={{ fontSize: 22, fontWeight: 700 }}>Downloads could not be shown</div>
         <div style={{ opacity: 0.8 }}>
-          ChickenTender took its downloads off this page. Steam's own downloads are not affected. ({this.state.error})
+          boilerRomM took its downloads off this page. Steam's own downloads are not affected. ({this.state.error})
         </div>
         <DialogButton
           style={{ width: 200 }}

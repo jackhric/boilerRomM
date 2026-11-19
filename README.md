@@ -1,4 +1,4 @@
-# ChickenTender
+# boilerRomM
 
 A Decky Loader plugin that brings games from a [RomM](https://romm.app) server to a Steam device.
 
@@ -22,7 +22,7 @@ has Uninstall in its menu, and appears on Steam's Downloads page while it downlo
 pnpm install
 uv pip install --target py_modules --no-deps yt-dlp   # trailer previews (not kept in git)
 pnpm typecheck && pnpm test && pnpm build   # types, frontend tests, dist/index.js (Vite)
-uv run ruff check py_modules/chickentender main.py tests && uv run pytest   # backend lint and tests
+uv run ruff check py_modules/boilerromm main.py tests && uv run pytest   # backend lint and tests
 npx decky-toolkit dev   # deploy to a paired device and live-sync changes
 ```
 
@@ -31,7 +31,7 @@ for every hook into Steam, and [docs/romm-api.md](docs/romm-api.md) for the RomM
 
 ## License
 
-ChickenTender is free software under the GNU Affero General Public License, version 3 ([LICENSE](LICENSE)).
+boilerRomM is free software under the GNU Affero General Public License, version 3 ([LICENSE](LICENSE)).
 
 It started from the [Decky plugin template](https://github.com/SteamDeckHomebrew/decky-plugin-template), which is
 BSD 3-Clause; that notice is kept in [LICENSES/BSD-3-Clause.txt](LICENSES/BSD-3-Clause.txt).

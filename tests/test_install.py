@@ -1,6 +1,6 @@
 import os
 
-from chickentender.install import InstallLocation
+from boilerromm.install import InstallLocation
 
 
 def test_platform_dir_prefers_esde_spelling_when_it_exists(tmp_path):
@@ -34,7 +34,7 @@ def test_tilde_expands_to_the_given_home():
 
 
 def test_launch_file_prefers_playlist_then_cue(tmp_path):
-    from chickentender.install import launch_file
+    from boilerromm.install import launch_file
     loc = InstallLocation(str(tmp_path), "/home/x")
     t = loc.target("psx", "G (USA)", single_file=False)
     os.makedirs(t.path)

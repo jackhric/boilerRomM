@@ -10,7 +10,7 @@ const STAGE_TEXT: Partial<Record<SgdbSigninStage, string>> = {
   verifying: "Checking the key…",
 };
 
-/** The second setup step: ChickenTender's storefront relies on SteamGridDB art, so a key is required. */
+/** The second setup step: boilerRomM's storefront relies on SteamGridDB art, so a key is required. */
 export function SgdbKey({ state }: { state: State }) {
   const [key, setKey] = useState("");
   const [busy, setBusy] = useState(false);
@@ -32,7 +32,7 @@ export function SgdbKey({ state }: { state: State }) {
   return (
     <PanelSection title="SteamGridDB">
       <PanelSectionRow>
-        <Field description="ChickenTender uses SteamGridDB for game artwork. Sign in with your Steam account and ChickenTender fetches your SteamGridDB API key itself." />
+        <Field description="boilerRomM uses SteamGridDB for game artwork. Sign in with your Steam account and boilerRomM fetches your SteamGridDB API key itself." />
       </PanelSectionRow>
       {signin?.active ? (
         <>

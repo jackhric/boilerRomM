@@ -1,4 +1,4 @@
-"""The install ledger: one record per game ChickenTender has put, or is putting, on this device.
+"""The install ledger: one record per game boilerRomM has put, or is putting, on this device.
 
 The ledger decides a game's state; the disk is only ever checked against it. A record holds the files RomM listed
 for the game and their sizes, so "installed" means every one of them is there at its full size, and a download that

@@ -3,9 +3,9 @@ import os
 
 import pytest
 
-from chickentender.downloads import Downloader
-from chickentender.install import InstallLocation
-from chickentender.library import Game
+from boilerromm.downloads import Downloader
+from boilerromm.install import InstallLocation
+from boilerromm.library import Game
 
 
 class FakeResponse:

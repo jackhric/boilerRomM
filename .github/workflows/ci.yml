@@ -27,5 +27,5 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
-      - run: uv run ruff check py_modules/chickentender main.py tests
+      - run: uv run ruff check py_modules/boilerromm main.py tests
       - run: uv run pytest

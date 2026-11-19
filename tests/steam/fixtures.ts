@@ -1,6 +1,6 @@
 import { InstalledGame, setGames, TrackedGame } from "../../src/steam/core/games";
 
-/** A shortcut ChickenTender made. */
+/** A shortcut boilerRomM made. */
 export const OURS = 0x90000001;
 /** A non-Steam shortcut the user added themselves. */
 export const OTHER_SHORTCUT = 0x90000002;

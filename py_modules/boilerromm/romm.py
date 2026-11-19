@@ -1,4 +1,4 @@
-"""The RomM HTTP API (5.4+): only the calls ChickenTender makes, one method each, no retries or caching."""
+"""The RomM HTTP API (5.4+): only the calls boilerRomM makes, one method each, no retries or caching."""
 import os
 import re
 import ssl

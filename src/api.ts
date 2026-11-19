@@ -1,7 +1,7 @@
 // The only file that knows the backend's method and event names.
 import { addEventListener, callable, removeEventListener } from "@decky/api";
 
-/** The install ledger's state for a game (py_modules/chickentender/ledger.py); "available" has no record. */
+/** The install ledger's state for a game (py_modules/boilerromm/ledger.py); "available" has no record. */
 export type GameStatus = "available" | "queued" | "downloading" | "paused" | "incomplete" | "failed" | "installed";
 
 export interface Game {
@@ -177,8 +177,8 @@ export interface LaunchTarget { rom_id: number; name: string; appid: number; exe
 export const gameVideo = callable<[rom_id: number], { rom_id: number; small: string; large: string; audio: string }>("game_video");
 export const setRomsDir = callable<[path: string], State>("set_roms_dir");
 
-const STATE_EVENT = "chickentender_state";
-const PROGRESS_EVENT = "chickentender_progress";
+const STATE_EVENT = "boilerromm_state";
+const PROGRESS_EVENT = "boilerromm_progress";
 
 export function onState(listener: (state: State) => void): () => void {
   addEventListener<[State]>(STATE_EVENT, listener);

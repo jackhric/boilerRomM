@@ -3,7 +3,7 @@ import logging
 
 import pytest
 
-from chickentender.app import App
+from boilerromm.app import App
 
 
 async def _noop(*_args):

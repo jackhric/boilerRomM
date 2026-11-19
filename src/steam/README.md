@@ -1,6 +1,6 @@
 # src/steam
 
-Everything ChickenTender does to Steam itself lives in this folder. The rest of the app imports only from
+Everything boilerRomM does to Steam itself lives in this folder. The rest of the app imports only from
 `src/steam/index.ts` and never touches a Steam global.
 
 ## The rules every hook follows
@@ -43,7 +43,7 @@ nothing. `native.ts` borrows two of Steam's components for our own pages.
 
 - `pnpm test` runs `tests/steam`. For each hook there is a test that a call about a Steam store app, and about a
   shortcut that is not ours, reaches Steam unchanged, and that undo restores Steam's own function.
-- On the device, `__chickenTender.steam()` in the console of `SharedJSContext` lists the hooks that are applied and
+- On the device, `__boilerRomM.steam()` in the console of `SharedJSContext` lists the hooks that are applied and
   any that failed or switched themselves off.
 - Each file states the Steam client build it was verified on. After a Steam update, a hook whose internals moved is
   simply not installed; check the diagnostics, then the file.

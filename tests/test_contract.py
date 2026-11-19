@@ -4,8 +4,8 @@ import logging
 import os
 import re
 
-from chickentender import app as app_module
-from chickentender.app import App
+from boilerromm import app as app_module
+from boilerromm.app import App
 
 ROOT = os.path.join(os.path.dirname(__file__), "..")
 API = open(os.path.join(ROOT, "src", "api.ts"), encoding="utf-8").read()

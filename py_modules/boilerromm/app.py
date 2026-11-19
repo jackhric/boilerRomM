@@ -31,10 +31,10 @@ from .settings import Settings, SettingsStore
 from .video import VideoResolver
 from .signin import SgdbSignin
 
-STATE_EVENT = "chickentender_state"
-PROGRESS_EVENT = "chickentender_progress"
+STATE_EVENT = "boilerromm_state"
+PROGRESS_EVENT = "boilerromm_progress"
 LIBRARY_REFRESH_S = 600
-CLIENT = "chickentender"
+CLIENT = "boilerromm"
 
 
 def device_identity(version: str) -> dict:
@@ -102,7 +102,7 @@ class App:
         self.runtime_dir = runtime_dir
         try:
             os.makedirs(runtime_dir, exist_ok=True)
-            dest = os.path.join(runtime_dir, "chickentender-launch")
+            dest = os.path.join(runtime_dir, "boilerromm-launch")
             shutil.copyfile(source, dest)
             os.chmod(dest, 0o755)
             self.launcher = dest
@@ -409,7 +409,7 @@ class App:
 
     # SteamGridDB artwork
     def _sgdb_client(self, key: str) -> SgdbClient:
-        return SgdbClient(key, self._sgdb_session, f"ChickenTender/{self.version}")
+        return SgdbClient(key, self._sgdb_session, f"boilerRomM/{self.version}")
 
     def _art_failed(self, e: SgdbError) -> None:
         self.sgdb_error = e.message

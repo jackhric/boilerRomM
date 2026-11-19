@@ -1,7 +1,7 @@
 import json
 import os
 
-from chickentender import retrodeck
+from boilerromm import retrodeck
 
 
 def test_detect_reads_roms_path_and_lock(tmp_path, monkeypatch):

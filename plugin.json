@@ -1,11 +1,11 @@
 {
-  "name": "ChickenTender",
+  "name": "boilerRomM",
   "author": "Jack Hric",
   "flags": [],
   "api_version": 1,
   "publish": {
     "tags": [],
-    "description": "ChickenTender.",
+    "description": "boilerRomM.",
     "image": "https://opengraph.githubassets.com/1/SteamDeckHomebrew/PluginLoader"
   }
 }

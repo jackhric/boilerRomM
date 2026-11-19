@@ -34,8 +34,8 @@ export default definePlugin(() => {
     }
   });
   return {
-    name: "ChickenTender",
-    titleView: <div className={staticClasses.Title}>ChickenTender</div>,
+    name: "boilerRomM",
+    titleView: <div className={staticClasses.Title}>boilerRomM</div>,
     content: <Content />,
     icon: <FaDrumstickBite />,
     onDismount() {

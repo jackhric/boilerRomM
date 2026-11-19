@@ -1,7 +1,7 @@
 import os
 
-from chickentender.romm import RommError, normalize_url, parse_version
-from chickentender.settings import Settings, SettingsStore
+from boilerromm.romm import RommError, normalize_url, parse_version
+from boilerromm.settings import Settings, SettingsStore
 
 
 def test_settings_round_trip_is_private(tmp_path):
@@ -31,7 +31,7 @@ def test_url_and_version_helpers():
 def test_signing_out_keeps_every_setting_that_is_about_the_device(tmp_path):
     from dataclasses import fields
 
-    from chickentender.settings import Settings, SettingsStore
+    from boilerromm.settings import Settings, SettingsStore
 
     account = {"server_url", "token", "device_id", "username", "scopes"}
     full = Settings(**{f.name: (["x"] if f.name == "scopes" else f"{f.name}-value") for f in fields(Settings)})

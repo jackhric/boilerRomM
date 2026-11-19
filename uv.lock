@@ -194,7 +194,7 @@ wheels = [
 ]
 
 [[package]]
-name = "chickentender"
+name = "boilerromm"
 version = "0.0.1"
 source = { virtual = "." }
 

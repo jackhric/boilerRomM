@@ -1,7 +1,7 @@
 {
-  "name": "chickentender",
+  "name": "boilerromm",
   "version": "0.0.1",
-  "description": "ChickenTender, a Decky Loader plugin",
+  "description": "boilerRomM, a Decky Loader plugin",
   "type": "module",
   "scripts": {
     "build": "vite build",
