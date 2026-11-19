@@ -48,6 +48,7 @@ export const KIT_CSS = `
 .ctk-fade { animation: ctk-fade .4s ease-out; }
 .ctk-skel { background: #2a2e37; }
 @keyframes ctk-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes ctk-spin { to { transform: rotate(360deg); } }
 .ctk-drift { animation: ctk-drift 32s linear forwards; }
 @keyframes ctk-drift { from { transform: scale(1); } to { transform: scale(1.07); } }
 
@@ -80,6 +81,7 @@ img.ctk-art { width: 100%; height: 100%; object-fit: cover; display: block; }
 .ctk-icon.gpfocus { background: #fff; color: ${C.ink}; }
 .ctk-button { display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; height: 36px; padding: 0 16px; border-radius: 2px;
   font-size: 14px; color: #fff; background: ${C.storeChip}; white-space: nowrap; transition: background-color .12s, color .12s; }
+.ctk-ghost:not(.gpfocus) { background: transparent; }
 .ctk-button.gpfocus { background: #fff; color: ${C.ink}; }
 
 .ctk-pill { box-sizing: border-box; height: 34px; padding: 6px 16px; border-radius: 64px; font-size: 12px; font-weight: 700; line-height: 22px;

@@ -1,8 +1,8 @@
 import { Focusable, GamepadButton, GamepadEvent } from "@decky/ui";
-import { FaEye } from "react-icons/fa";
+import { FaEye, FaSyncAlt } from "react-icons/fa";
 import { FC, useEffect, useRef, useState } from "react";
-import { Game, Progress } from "../../api";
-import { ActionButton, Art, C, IconButton, ConsoleBanner, FocusBackdrop, fitColumns, GUTTER, HeroArt, Logo, Page, PillTabs, showInBackdrop, TileGrid, usePageSize, WideArt } from "../kit";
+import { Game, Progress, refreshLibrary } from "../../api";
+import { ActionButton, Art, Button, C, IconButton, ConsoleBanner, FocusBackdrop, fitColumns, GUTTER, HeroArt, Logo, Page, PillTabs, showInBackdrop, TileGrid, usePageSize, WideArt } from "../kit";
 import { StoreProps } from "../pages";
 import { takeBrowseRequest } from "./browse";
 import { NativeTabRow, playTabSound } from "../../steam";
@@ -14,6 +14,8 @@ import { useGameDetails } from "../game/details";
 import { revealPageTop, useReturnFocus } from "../kit/focus";
 import { useVideo, warmVideos } from "../kit/video";
 import { openGamePage, useStoreModel } from "./hooks";
+
+const REFRESH = { width: 36, padding: 0, flex: "0 0 auto" } as const;
 
 type Section = "discover" | "browse" | "rated" | "new" | "consoles";
 const SECTIONS: { key: Section; label: string }[] = [
@@ -105,6 +107,9 @@ export function makeStore(Body: FC<DiscoverProps>): FC<StoreProps> {
               ? <NativeTabRow tabs={TABS} activeTab={section} onShowTab={(id) => change(id as Section)} showGlyphs wrapAround={false} className="sp-tabs" />
               : <PillTabs tabs={SECTIONS} active={section} onChange={change} />}
           </div>
+          <Button label="Refresh" onClick={() => void refreshLibrary().catch(() => {})} style={REFRESH} ghost>
+            <FaSyncAlt size={15} style={state.library.loading ? { animation: "ctk-spin 1s linear infinite" } : undefined} />
+          </Button>
           <SearchField text={search.text} box={search.box} onType={search.type} />
         </Focusable>
         <div key={shown} className={`sp-body${dir ? ` sp-${leaving ? "exit" : "enter"}-${dir}` : ""}`} style={{ paddingTop: 18, paddingBottom: 24 }}>

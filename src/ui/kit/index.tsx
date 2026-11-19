@@ -37,6 +37,14 @@ const PageSizeContext = createContext<PageSize>({ width: 1353, height: 719 });
 /** The page's size in CSS px. It differs a lot between displays: about 1353 wide on a 1080p TV, 853 on a handheld. */
 export const usePageSize = () => useContext(PageSizeContext);
 
+/** As `fitColumns`, but always an odd number of tiles, so one sits in the middle of the page. */
+export function fitOddColumns(pageWidth: number, tile: number, gap = GAP, gutter = GUTTER): { columns: number; width: number } {
+  const room = pageWidth - 2 * gutter;
+  const fit = Math.max(3, Math.floor((room + gap) / (tile + gap)));
+  const columns = fit % 2 ? fit : fit - 1;
+  return { columns, width: Math.floor((room - (columns - 1) * gap) / columns) };
+}
+
 /** How many tiles of at least `tile` px fit across the page, and the width that makes them fill it exactly. */
 export function fitColumns(pageWidth: number, tile: number, gap = GAP, gutter = GUTTER): { columns: number; width: number } {
   const room = pageWidth - 2 * gutter;
@@ -264,10 +272,11 @@ export function MoreButton({ game, serverUrl }: { game: Game; serverUrl: string 
 }
 
 /** A small secondary button in the store's style. */
-export function Button({ children, label, onClick, style }: { children: ReactNode; label?: string; onClick: (el: HTMLDivElement | null) => void; style?: CSSProperties }) {
+/** `ghost`: no fill until it has the focus. */
+export function Button({ children, label, onClick, style, ghost }: { children: ReactNode; label?: string; onClick: (el: HTMLDivElement | null) => void; style?: CSSProperties; ghost?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
   return (
-    <Focusable ref={ref} className="ctk-button" noFocusRing onActivate={() => onClick(ref.current)} onOKActionDescription={label ?? "Select"} style={style}>
+    <Focusable ref={ref} className={ghost ? "ctk-button ctk-ghost" : "ctk-button"} noFocusRing onActivate={() => onClick(ref.current)} onOKActionDescription={label ?? "Select"} style={style}>
       {children}
     </Focusable>
   );

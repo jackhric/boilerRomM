@@ -1,7 +1,7 @@
 import { Focusable } from "@decky/ui";
 import { ReactNode, useCallback, useMemo } from "react";
 import { Game, Progress } from "../../api";
-import { Button, C, Capsule, CAPSULE_W, fitColumns, GUTTER, showInBackdrop, TileGrid, usePageSize } from "../kit";
+import { Button, C, Capsule, fitOddColumns, GUTTER, showInBackdrop, TileGrid, usePageSize } from "../kit";
 import { FaSortAmountDown } from "react-icons/fa";
 import { FilterBar, FilterBarProps, ICON } from "./filters";
 import { sortGames } from "../../domain/catalog";
@@ -61,11 +61,15 @@ interface CatalogProps {
   children?: ReactNode;
 }
 
+// The smallest a capsule gets: seven across on a 1080p TV, five on a handheld.
+const GRID_TILE = 132;
+const GRID_GAP = 28;
+
 export function Catalog({ title, weight, subtitle, games, progress, section, remember, limit, onNearEnd, filterBar, ordered, children }: CatalogProps) {
   const { sort, sortLabel, openSortMenu } = useSort();
   const sorted = useMemo(() => (ordered ? games : sortGames(games, sort)), [games, sort, ordered]);
   const shown = useMemo(() => (limit ? sorted.slice(0, limit) : sorted), [sorted, limit]);
-  const { columns, width } = fitColumns(usePageSize().width, CAPSULE_W);
+  const { columns, width } = fitOddColumns(usePageSize().width, GRID_TILE, GRID_GAP);
   const remembered = useTileFocus(remember);
   const onFocus = useCallback((g: Game, el: HTMLDivElement | null) => {
     remembered(g, el);
@@ -87,7 +91,7 @@ export function Catalog({ title, weight, subtitle, games, progress, section, rem
         )}
       </div>
       {shown.length === 0 && <div style={{ padding: `16px ${GUTTER}px`, fontSize: 16, color: C.description }}>No games match</div>}
-      <TileGrid items={shown} columns={columns} render={(g) => <Capsule key={g.rom_id} game={g} width={width} progress={progress[g.rom_id]} onFocus={onFocus} onOpen={openGamePage} />} />
+      <TileGrid items={shown} columns={columns} gap={GRID_GAP} render={(g) => <Capsule key={g.rom_id} game={g} width={width} progress={progress[g.rom_id]} onFocus={onFocus} onOpen={openGamePage} />} />
       {children}
     </div>
   );
