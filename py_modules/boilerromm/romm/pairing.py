@@ -3,6 +3,7 @@ import asyncio
 import time
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
+from typing import Any
 
 from .client import RommClient, RommError
 
@@ -20,7 +21,7 @@ class PairingState:
     expires_at: float = 0
     error: str = ""
 
-    def as_dict(self) -> dict:
+    def as_dict(self) -> dict[str, Any]:
         return {
             "status": self.status,
             "user_code": self.user_code,
@@ -33,11 +34,11 @@ class PairingState:
 @dataclass
 class DevicePairing:
     client: RommClient
-    identity: dict
+    identity: dict[str, Any]
     on_change: Callable[[], None]
-    on_approved: Callable[[dict], Awaitable[None]]
+    on_approved: Callable[[dict[str, Any]], Awaitable[None]]
     state: PairingState = field(default_factory=PairingState)
-    _task: asyncio.Task | None = None
+    _task: asyncio.Task[None] | None = None
 
     async def start(self) -> None:
         await self.cancel()

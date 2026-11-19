@@ -6,10 +6,15 @@ import tempfile
 Sections = dict[str, dict[str, str]]
 
 
+class _Ini(configparser.RawConfigParser):
+    def optionxform(self, optionstr: str) -> str:
+        # Emulators read their keys case-sensitively; the default lowercases them.
+        return optionstr
+
+
 def update(path: str, values: Sections | None = None, defaults: Sections | None = None) -> None:
     """`values` are always written; `defaults` only where the key is not there yet."""
-    ini = configparser.RawConfigParser(strict=False)
-    ini.optionxform = str  # emulators read their keys case-sensitively
+    ini = _Ini(strict=False)
     ini.read(path, encoding="utf-8")
     for sections, overwrite in ((defaults, False), (values, True)):
         for section, items in (sections or {}).items():
@@ -34,7 +39,6 @@ def update(path: str, values: Sections | None = None, defaults: Sections | None 
 
 
 def read(path: str, section: str, key: str, fallback: str = "") -> str:
-    ini = configparser.RawConfigParser(strict=False)
-    ini.optionxform = str
+    ini = _Ini(strict=False)
     ini.read(path, encoding="utf-8")
-    return ini.get(section, key, fallback=fallback)
+    return str(ini.get(section, key, fallback=fallback))

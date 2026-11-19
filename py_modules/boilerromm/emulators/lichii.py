@@ -2,6 +2,7 @@
 import os
 import re
 import shutil
+from typing import Any
 
 from . import inifile
 from .base import Command, Emulator, Firmware
@@ -108,7 +109,7 @@ class Lichii(Emulator):
         title = is_title_keys_file(os.path.join(os.path.dirname(self.keys), TITLE_KEYS))
         return [Firmware("switch", KEYS, "")] + ([Firmware("switch", TITLE_KEYS, "")] if title else [])
 
-    def compatible(self, entry: dict) -> bool:
+    def compatible(self, entry: dict[str, Any]) -> bool:
         return str(entry.get("file_name", "")).lower().endswith(".keys")
 
     def remove_firmware(self) -> None:

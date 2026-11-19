@@ -147,7 +147,7 @@ async def test_a_game_whose_emulator_lacks_firmware_gets_it_from_romm_before_it_
     _installed(rpcs3)
     assert "needs" in app.launch_target(5)["blocked"]
 
-    assert (await app.play_target(5))["blocked"] == "RPCS3 could not install its firmware. Try again in Settings, under BIOS."
+    assert (await app.play_target(5))["blocked"] == "RPCS3 could not install its firmware. Try again in Settings, under BIOS Files."
     assert os.listdir(rpcs3.layout.bios("ps3")) == ["PS3UPDAT.PUP"]
 
     async def run(*args, timeout):
@@ -165,7 +165,7 @@ async def test_a_game_stays_blocked_with_the_reason_when_romm_has_no_firmware(ap
     app.library.games[6] = _game(6, "vectrex9", "Odd")
     _installed(app.emulators["pcsx2"])
     target = await app.play_target(5)
-    assert target["blocked"] == "PCSX2 needs a BIOS, and RomM did not have one. Add it in Settings, under BIOS."
+    assert target["blocked"] == "PCSX2 needs a BIOS, and RomM did not have one. Add it in Settings, under BIOS Files."
     assert app.state()["emulators"][1]["error"] == ""
     assert app.launch_target(6)["blocked"] == "boilerRomM has no emulator for Odd."
 

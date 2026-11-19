@@ -54,7 +54,7 @@ def launch_file(target: Target) -> str:
 
 
 class InstallLocation:
-    def __init__(self, roms_dir: str, home: str):
+    def __init__(self, roms_dir: str, home: str) -> None:
         self.home = home
         self.roms_dir = os.path.expanduser(roms_dir.replace("~", home, 1) if roms_dir.startswith("~") else roms_dir)
 

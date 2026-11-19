@@ -1,12 +1,15 @@
 """What `App` does with SteamGridDB: the key, signing in for it, and a game's art and icon."""
 import base64
 import os
+from typing import Any
 
+from ..core import Core
+from ..romm.library import Game
 from ..sgdb.client import KINDS as ART_KINDS
 from ..sgdb.client import SgdbClient, SgdbError
 
 
-class ArtworkCommands:
+class ArtworkCommands(Core):
     def _sgdb_client(self, key: str) -> SgdbClient:
         return SgdbClient(key, self._sgdb_session, f"boilerRomM/{self.version}")
 
@@ -14,7 +17,7 @@ class ArtworkCommands:
         self.sgdb_error = e.message
         self.log.warning("SteamGridDB prefetch stopped: %s", e.message)
 
-    async def set_sgdb_key(self, key: str) -> dict:
+    async def set_sgdb_key(self, key: str) -> dict[str, Any]:
         """Saves the key only once SteamGridDB accepts it; a refused key shows up as `sgdb.error`, never raises."""
         key = (key or "").strip()
         if not key:
@@ -43,15 +46,15 @@ class ArtworkCommands:
         await self.set_sgdb_key(key)
         return "" if self.sgdb is not None and not self.sgdb_error else (self.sgdb_error or "SteamGridDB did not accept the key")
 
-    async def start_sgdb_signin(self) -> dict:
+    async def start_sgdb_signin(self) -> dict[str, Any]:
         self.signin.start()
         return self.state()
 
-    async def cancel_sgdb_signin(self) -> dict:
+    async def cancel_sgdb_signin(self) -> dict[str, Any]:
         await self.signin.cancel()
         return self.state()
 
-    async def clear_sgdb_key(self) -> dict:
+    async def clear_sgdb_key(self) -> dict[str, Any]:
         await self.prefetch.stop()
         if self.sgdb:
             await self.sgdb.close()
@@ -61,7 +64,7 @@ class ArtworkCommands:
         self._changed()
         return self.state()
 
-    async def _art_entry(self, game) -> dict | None:
+    async def _art_entry(self, game: Game) -> dict[str, Any] | None:
         """The game's cache entry, looked up now when missing; None without a key or when the lookup failed."""
         entry = self.art.get(game.rom_id, game.sgdb_id, game.name)
         if entry or not self.sgdb:
@@ -78,7 +81,7 @@ class ArtworkCommands:
             self._changed()
         return entry
 
-    async def game_art(self, rom_id: int) -> dict:
+    async def game_art(self, rom_id: int) -> dict[str, Any]:
         game = self.library.games.get(int(rom_id))
         if not game:
             raise ValueError("Unknown game")
@@ -87,7 +90,7 @@ class ArtworkCommands:
         sgdb_id = (entry or {}).get("sgdb_id") or game.sgdb_id
         return {"rom_id": game.rom_id, "sgdb_id": sgdb_id, **urls, "ready": self.sgdb is not None}
 
-    async def art_base64(self, rom_id: int, kind: str) -> dict:
+    async def art_base64(self, rom_id: int, kind: str) -> dict[str, Any]:
         if kind not in ART_KINDS:
             raise ValueError(f"Unknown art kind {kind!r}")
         game = self.library.games.get(int(rom_id))

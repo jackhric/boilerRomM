@@ -2,6 +2,7 @@
 import os
 import re
 import shutil
+from typing import Any
 
 from ..games.install import Target
 from . import xmlfile
@@ -75,7 +76,7 @@ class Cemu(Emulator):
     def expected_files(self, platform: str) -> str:
         return KEYS
 
-    def compatible(self, entry: dict) -> bool:
+    def compatible(self, entry: dict[str, Any]) -> bool:
         return str(entry.get("file_name", "")).lower() == KEYS
 
     def remove_firmware(self) -> None:
@@ -139,7 +140,7 @@ class Cemu(Emulator):
     def firmware_ready(self) -> bool:
         return True
 
-    def bios_status(self) -> list[dict]:
+    def bios_status(self) -> list[dict[str, Any]]:
         found = self.firmware_found()
         return [{"platform": "wiiu", "folder": self.layout.bios("wiiu"), "found": [f.name for f in found], "ready": bool(found),
                  "expects": self.expected_files("wiiu")}]

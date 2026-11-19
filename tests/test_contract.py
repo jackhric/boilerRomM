@@ -4,7 +4,7 @@ import logging
 import os
 import re
 
-from boilerromm import app as app_module
+from boilerromm import core
 from boilerromm.app import App
 
 ROOT = os.path.join(os.path.dirname(__file__), "..")
@@ -27,7 +27,7 @@ def test_every_call_the_frontend_makes_exists_and_nothing_else_is_exposed():
 
 def test_event_names_match():
     names = dict(re.findall(r'const (\w+_EVENT) = "(\w+)";', API))
-    assert names == {"STATE_EVENT": app_module.STATE_EVENT, "PROGRESS_EVENT": app_module.PROGRESS_EVENT}
+    assert names == {"STATE_EVENT": core.STATE_EVENT, "PROGRESS_EVENT": core.PROGRESS_EVENT}
 
 
 def test_the_state_has_exactly_the_keys_the_frontend_declares(tmp_path):

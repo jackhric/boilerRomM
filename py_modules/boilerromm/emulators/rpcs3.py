@@ -3,6 +3,7 @@ import json
 import os
 import re
 import shutil
+from typing import Any
 
 from ..games.install import Target, launch_file
 from . import inifile
@@ -123,7 +124,7 @@ class Rpcs3(Emulator):
     def expected_files(self, platform: str) -> str:
         return PUP_NAME
 
-    def compatible(self, entry: dict) -> bool:
+    def compatible(self, entry: dict[str, Any]) -> bool:
         return str(entry.get("file_name", "")).lower().endswith(".pup")
 
     def firmware_label(self) -> str:
@@ -196,10 +197,11 @@ class Rpcs3(Emulator):
     def launch_file(self, target: Target) -> str:
         """A disc or PSN game folder is launched as the folder, wherever below the download it starts."""
         if target.is_dir:
+            inner: list[str] = []
             try:
                 inner = sorted(os.path.join(target.path, n) for n in os.listdir(target.path))
             except OSError:
-                inner = []
+                pass
             for folder in (target.path, *inner):
                 if _is_game_folder(folder):
                     return folder

@@ -3,7 +3,9 @@ import asyncio
 import hashlib
 import socket
 import time
+from typing import Any
 
+from ..games.commands import GameCommands
 from ..romm.client import MIN_VERSION, RommClient, RommError, normalize_url, parse_version
 from ..romm.library import Library
 from ..romm.pairing import DevicePairing
@@ -14,7 +16,7 @@ LIBRARY_RETRY_S = (15, 30, 60, 120, 300)
 CLIENT = "boilerromm"
 
 
-def device_identity(version: str) -> dict:
+def device_identity(version: str) -> dict[str, Any]:
     try:
         with open("/etc/machine-id") as f:
             machine = f.read().strip()
@@ -29,8 +31,8 @@ def device_identity(version: str) -> dict:
     }
 
 
-class ServerCommands:
-    async def set_server(self, url: str) -> dict:
+class ServerCommands(GameCommands):
+    async def set_server(self, url: str) -> dict[str, Any]:
         typed = url.strip().rstrip("/")
         if not typed:
             raise ValueError("Enter the RomM server address")
@@ -74,7 +76,7 @@ class ServerCommands:
         if emit:
             self._changed()
 
-    async def check_connection(self) -> dict:
+    async def check_connection(self) -> dict[str, Any]:
         """Asks the server now: does it answer, which version, and does it still accept this device's token."""
         result = {"reachable": False, "version": "", "supported": False, "signed_in": False, "username": "", "ms": 0, "error": ""}
         if not self.client:
@@ -96,7 +98,7 @@ class ServerCommands:
         self._changed()
         return result
 
-    async def start_pairing(self) -> dict:
+    async def start_pairing(self) -> dict[str, Any]:
         if not self.client or self.server.get("error"):
             raise ValueError("Connect to a RomM server first")
         if not self.pairing:
@@ -104,7 +106,7 @@ class ServerCommands:
         await self.pairing.start()
         return self.state()
 
-    async def _approved(self, token: dict) -> None:
+    async def _approved(self, token: dict[str, Any]) -> None:
         assert self.client
         self.client.token = token["access_token"]
         self.settings.token = token["access_token"]
@@ -130,7 +132,7 @@ class ServerCommands:
         except Exception as e:
             self.log.warning("device update failed: %s", e)
 
-    async def disconnect(self) -> dict:
+    async def disconnect(self) -> dict[str, Any]:
         if self._refresh_task:
             self._refresh_task.cancel()
             self._refresh_task = None
@@ -151,7 +153,7 @@ class ServerCommands:
         self._changed()
         return self.state()
 
-    async def refresh_library(self) -> dict:
+    async def refresh_library(self) -> dict[str, Any]:
         if self.settings.paired and self.client and not self.library.loading:
             self.library.loading = True
             self._changed()
@@ -177,13 +179,13 @@ class ServerCommands:
             failures = failures + 1 if self.library.error else 0
             await asyncio.sleep(LIBRARY_RETRY_S[min(failures, len(LIBRARY_RETRY_S)) - 1] if failures else LIBRARY_REFRESH_S)
 
-    async def game_details(self, rom_id: int) -> dict:
+    async def game_details(self, rom_id: int) -> dict[str, Any]:
         game = self.library.games.get(int(rom_id))
         if not game or not self.client:
             raise ValueError("Unknown game")
         return game.details(self.client)
 
-    async def similar_games(self, rom_id: int) -> list[dict]:
+    async def similar_games(self, rom_id: int) -> list[dict[str, Any]]:
         """Games in the library that resemble this one, from RomM's similarity graph."""
         if not self.client:
             return []

@@ -4,7 +4,7 @@ import os
 import tempfile
 
 
-def write(path: str, data, *, indent: int | None = 2, private: bool = False, durable: bool = False) -> None:
+def write(path: str, data: object, *, indent: int | None = 2, private: bool = False, durable: bool = False) -> None:
     """`private` makes the file readable by its owner only; `durable` waits until the bytes are on the disk."""
     folder = os.path.dirname(path)
     os.makedirs(folder, exist_ok=True)

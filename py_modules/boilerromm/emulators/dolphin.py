@@ -2,7 +2,7 @@
 import os
 
 from . import inifile
-from .base import Command, Emulator, link_dir
+from .base import Command, Emulator, Layout, link_dir
 from .releases import Source
 
 # pkgforge-dev builds each Dolphin release again every three weeks, with newer libraries, and tags every build
@@ -20,7 +20,7 @@ class Dolphin(Emulator):
     source = Source("pkgforge-dev/Dolphin-emu-AppImage", r"-anylinux-x86_64\.AppImage$", TAG)
     recent_versions = 0  # they would mostly be older builds of the same Dolphin version
 
-    def __init__(self, layout):
+    def __init__(self, layout: Layout) -> None:
         super().__init__(layout)
         # Dolphin follows the XDG folders only while there is no ~/.dolphin-emu and no ./user, so it is given one
         # user folder with -u instead, and keeps its config and cache inside it.

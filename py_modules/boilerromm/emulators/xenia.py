@@ -6,6 +6,7 @@ import os
 import re
 import tempfile
 import tomllib
+from typing import Any
 
 from .base import Command, Emulator
 from .releases import Source
@@ -58,7 +59,7 @@ def read_account(data: bytes) -> str:
     return plain[16:48].decode("utf-16-be").rstrip("\0")
 
 
-def _toml(value) -> str:
+def _toml(value: object) -> str:
     if isinstance(value, bool):
         return "true" if value else "false"
     return json.dumps(value, ensure_ascii=False) if isinstance(value, str) else str(value)
@@ -104,7 +105,7 @@ class Xenia(Emulator):
             config["Profiles"]["logged_profile_slot_0_xuid"] = profiles[0]
         self.write_config(config)
 
-    def read_config(self) -> dict[str, dict]:
+    def read_config(self) -> dict[str, dict[str, Any]]:
         try:
             with open(self.toml, "rb") as f:
                 config = tomllib.load(f)
@@ -112,7 +113,7 @@ class Xenia(Emulator):
             return {}
         return {section: dict(items) for section, items in config.items() if isinstance(items, dict)}
 
-    def write_config(self, config: dict[str, dict]) -> None:
+    def write_config(self, config: dict[str, dict[str, Any]]) -> None:
         # Xenia writes the whole file again when it closes, with every option and its description, so the comments
         # lost here come back.
         text = "\n".join(f"[{section}]\n" + "".join(f"{key} = {_toml(value)}\n" for key, value in items.items())

@@ -31,7 +31,7 @@ class Settings:
 class SettingsStore:
     """One JSON file, written atomically and readable only by the owner (it holds the RomM token)."""
 
-    def __init__(self, path: str):
+    def __init__(self, path: str) -> None:
         self.path = path
 
     def load(self) -> Settings:

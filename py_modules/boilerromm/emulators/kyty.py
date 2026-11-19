@@ -8,7 +8,8 @@ import zlib
 
 from ..games.install import Target, launch_file
 from . import releases
-from .base import Command, Emulator
+from .base import Command, Emulator, Layout
+from .progress import Session
 from .releases import Source
 from .rpcs3 import _link
 
@@ -50,7 +51,7 @@ class Kyty(Emulator):
     platforms = ("ps5",)
     source = Source("KytyPS5/KytyPS5", r"-Linux-x86_64\.tar\.gz$", TAG)
 
-    def __init__(self, layout):
+    def __init__(self, layout: Layout) -> None:
         super().__init__(layout)
         self.build_dir = os.path.join(self.home, "build")
         self.executable = os.path.join(self.build_dir, BINARY)
@@ -59,7 +60,7 @@ class Kyty(Emulator):
         return tag.removeprefix("KytyPS5-")
 
     # Build
-    async def install(self, session, tag: str = "") -> str:
+    async def install(self, session: Session, tag: str = "") -> str:
         release = await releases.find(session, self.source, tag)
         archive = os.path.join(self.cache_dir, "kyty.tar.gz")
         await releases.download(session, release, archive)
@@ -82,7 +83,10 @@ class Kyty(Emulator):
                         continue
                     path = os.path.join(part, name)
                     os.makedirs(os.path.dirname(path), exist_ok=True)
-                    with tar.extractfile(member) as source, open(path, "wb") as f:
+                    source = tar.extractfile(member)
+                    if source is None:
+                        continue
+                    with source, open(path, "wb") as f:
                         shutil.copyfileobj(source, f)
             if not os.path.isfile(os.path.join(part, BINARY)):
                 raise releases.ReleaseError(f"KytyPS5: the archive holds no {BINARY}")

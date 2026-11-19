@@ -1,13 +1,14 @@
 """Which Steam shortcut belongs to which game. Steam creates shortcuts (frontend only); this remembers the appids."""
 import json
+from typing import Any
 
 from .. import jsonfile
 
 
 class ShortcutMap:
-    def __init__(self, path: str):
+    def __init__(self, path: str) -> None:
         self.path = path
-        self._by_rom: dict[int, dict] = {}
+        self._by_rom: dict[int, dict[str, Any]] = {}
         try:
             with open(path, encoding="utf-8") as f:
                 self._by_rom = {int(k): v for k, v in json.load(f).items()}

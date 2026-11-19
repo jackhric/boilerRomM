@@ -5,6 +5,7 @@ they are resolved here on the device and cached only until shortly before they l
 """
 import asyncio
 import json
+import logging
 import os
 import re
 import shutil
@@ -36,7 +37,7 @@ _MODULES_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(_
 _LOADER_ENV = ("LD_LIBRARY_PATH", "PYTHONHOME", "PYTHONPATH")
 
 
-def _extract(video_id: str) -> dict:
+def _extract(video_id: str) -> dict[str, Any]:
     python = shutil.which("python3", path="/usr/bin:/bin:/usr/local/bin")
     if not python:
         raise RuntimeError("no system python3")
@@ -48,7 +49,7 @@ def _extract(video_id: str) -> dict:
     return json.loads(done.stdout)
 
 
-def pick_stream(formats: list[dict], max_height: int) -> str:
+def pick_stream(formats: list[dict[str, Any]], max_height: int) -> str:
     """The best H.264 MP4 the Steam client plays as one plain file, no taller than max_height (else the smallest)."""
     usable = [f for f in formats
               if f.get("url") and f.get("ext") == "mp4" and str(f.get("vcodec") or "").startswith("avc1")
@@ -59,15 +60,15 @@ def pick_stream(formats: list[dict], max_height: int) -> str:
     # Previews are muted, so a video-only stream is preferred at the same height: it is smaller.
     silent_first = lambda f: (f["height"], f.get("acodec") in (None, "none"))  # noqa: E731
     best = max(fitting, key=silent_first) if fitting else min(usable, key=lambda f: f["height"])
-    return best["url"]
+    return str(best["url"])
 
 
-def pick_audio(formats: list[dict]) -> str:
+def pick_audio(formats: list[dict[str, Any]]) -> str:
     """The best plain AAC track: the video streams are silent, so sound is played alongside them."""
     usable = [f for f in formats
               if f.get("url") and f.get("ext") == "m4a" and f.get("vcodec") in (None, "none")
               and str(f.get("acodec") or "").startswith("mp4a") and str(f.get("protocol") or "").startswith("http")]
-    return max(usable, key=lambda f: f.get("abr") or 0)["url"] if usable else ""
+    return str(max(usable, key=lambda f: f.get("abr") or 0)["url"]) if usable else ""
 
 
 def expires_at(url: str, now: float) -> float:
@@ -78,14 +79,14 @@ def expires_at(url: str, now: float) -> float:
 
 
 class VideoResolver:
-    def __init__(self, extract: Callable[[str], dict] = _extract, clock: Callable[[], float] = time.time, log: Any = None):
+    def __init__(self, extract: Callable[[str], dict[str, Any]] = _extract, clock: Callable[[], float] = time.time, log: logging.Logger | None = None) -> None:
         self._extract = extract
         self._clock = clock
         self._log = log
-        self._cache: dict[str, tuple[float, dict]] = {}
-        self._pending: dict[str, asyncio.Task] = {}
+        self._cache: dict[str, tuple[float, dict[str, Any]]] = {}
+        self._pending: dict[str, asyncio.Future[dict[str, Any]]] = {}
 
-    async def resolve(self, video_id: str) -> dict:
+    async def resolve(self, video_id: str) -> dict[str, Any]:
         """{"small": url, "large": url, "audio": url}; empty strings when the video cannot be resolved."""
         empty = {"small": "", "large": "", "audio": ""}
         if not VALID_ID.match(video_id or ""):
@@ -102,7 +103,7 @@ class VideoResolver:
             if task.done():
                 self._pending.pop(video_id, None)
 
-    async def _resolve(self, video_id: str) -> dict:
+    async def _resolve(self, video_id: str) -> dict[str, Any]:
         now = self._clock()
         try:
             info = await asyncio.to_thread(self._extract, video_id)

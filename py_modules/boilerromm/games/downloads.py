@@ -9,6 +9,7 @@ import os
 import time
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
+from typing import Any
 
 from ..romm.client import RommClient, RommError
 from ..romm.library import Game
@@ -33,14 +34,14 @@ class Job:
     error: str = ""
     started_at: float = 0
     completed_at: float = 0
-    task: asyncio.Task | None = None
+    task: asyncio.Task[None] | None = None
     _rate_from: tuple[float, int] = field(default=(0.0, 0))
 
-    def progress(self) -> dict:
+    def progress(self) -> dict[str, Any]:
         return {"rom_id": self.game.rom_id, "appid": self.appid, "done_bytes": self.done_bytes, "total_bytes": self.total_bytes,
                 "bps": self.bps, "status": self.status, "error": self.error}
 
-    def view(self, queue_index: int) -> dict:
+    def view(self, queue_index: int) -> dict[str, Any]:
         """The shape Steam's Downloads page bridge renders (see src/steam/inject.ts OurDownload)."""
         active = self.status == "downloading"
         remaining = self.total_bytes - self.done_bytes
@@ -54,11 +55,11 @@ class Job:
         }
 
 
-def game_files(rom: dict) -> list[dict]:
+def game_files(rom: dict[str, Any]) -> list[dict[str, Any]]:
     return [f for f in rom.get("files", []) if f.get("category") in GAME_FILE_CATEGORIES]
 
 
-def manifest(rom: dict, target: Target) -> list[dict]:
+def manifest(rom: dict[str, Any], target: Target) -> list[dict[str, Any]]:
     """The ledger's file list for a game: each of RomM's game files as a path inside the target and its size."""
     prefix = f"{rom.get('fs_path', '')}/{rom['fs_name']}".strip("/")
     out = []
@@ -80,8 +81,8 @@ def as_game(install: Install) -> Game:
 
 class Downloader:
     def __init__(self, client: RommClient, location: InstallLocation,
-                 on_progress: Callable[[dict], None], on_finished: Callable[[Job], Awaitable[None]],
-                 ledger: Ledger | None = None):
+                 on_progress: Callable[[dict[str, Any]], None], on_finished: Callable[[Job], Awaitable[None]],
+                 ledger: Ledger | None = None) -> None:
         self.ledger = ledger or Ledger()
         self.client = client
         self.location = location
@@ -89,12 +90,12 @@ class Downloader:
         self.on_finished = on_finished
         self.jobs: dict[int, Job] = {}
         self.order: list[int] = []
-        self._runner: asyncio.Task | None = None
+        self._runner: asyncio.Task[None] | None = None
         self._stopping = False
         self._wake = asyncio.Event()
 
     # Queries
-    def snapshot(self) -> dict:
+    def snapshot(self) -> dict[str, Any]:
         active = next((j.progress() for j in self.jobs.values() if j.status == "downloading"), None)
         live = [i for i in self.order if self.jobs[i].status in ACTIVE]
         items = [self.jobs[i].view(idx) for idx, i in enumerate(live)]
@@ -133,9 +134,9 @@ class Downloader:
                 self._kick()
             return
         old = self.ledger.get(game.rom_id)
-        self.ledger.put(Install(rom_id=game.rom_id, name=game.name, slug=game.slug, fs_name=game.fs_name, single_file=game.single_file,
-                                size_bytes=game.size_bytes, state=L.QUEUED, files=old.files if old else []))
-        seen = L.check(self.ledger.get(game.rom_id), self._target(game).path)
+        install = self.ledger.put(Install(rom_id=game.rom_id, name=game.name, slug=game.slug, fs_name=game.fs_name, single_file=game.single_file,
+                                          size_bytes=game.size_bytes, state=L.QUEUED, files=old.files if old else []))
+        seen = L.check(install, self._target(game).path)
         self.jobs[game.rom_id] = Job(game, appid=appid, done_bytes=seen.done_bytes, total_bytes=seen.total_bytes)
         if game.rom_id in self.order:
             self.order.remove(game.rom_id)
@@ -251,7 +252,7 @@ class Downloader:
             job.task = asyncio.create_task(self._download(job))
             try:
                 await job.task
-                seen = L.check(self.ledger.get(rom_id), self._target(job.game).path)
+                seen = L.check(self.ledger.require(rom_id), self._target(job.game).path)
                 if not seen.complete:
                     raise RuntimeError(f"{len(seen.missing)} file(s) missing after the download: {', '.join(seen.missing[:3])}")
                 job.status = "done"
@@ -286,7 +287,8 @@ class Downloader:
         target = self._target(job.game)
         listed = manifest(rom, target)
         job.total_bytes = sum(e["size"] for e in listed)
-        install = self.ledger.update(job.game.rom_id, files=listed, size_bytes=job.total_bytes)
+        self.ledger.update(job.game.rom_id, files=listed, size_bytes=job.total_bytes)
+        install = self.ledger.require(job.game.rom_id)
         completed = 0
         for f, entry in zip(files, listed, strict=True):
             dest = L.file_path(install, target.path, entry)
@@ -297,7 +299,7 @@ class Downloader:
             await self._fetch(job, f, dest, completed)
             completed += entry["size"]
 
-    async def _fetch(self, job: Job, f: dict, dest: str, completed: int) -> None:
+    async def _fetch(self, job: Job, f: dict[str, Any], dest: str, completed: int) -> None:
         os.makedirs(os.path.dirname(dest), exist_ok=True)
         part = dest + ".part"
         start = os.path.getsize(part) if os.path.isfile(part) else 0

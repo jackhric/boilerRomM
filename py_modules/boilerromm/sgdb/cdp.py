@@ -11,7 +11,7 @@ class CdpError(Exception):
     pass
 
 
-async def list_pages(port: int = 8080) -> list[dict]:
+async def list_pages(port: int = 8080) -> list[dict[str, Any]]:
     try:
         async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=5)) as s:
             async with s.get(f"http://127.0.0.1:{port}/json") as r:
@@ -21,7 +21,7 @@ async def list_pages(port: int = 8080) -> list[dict]:
     return [t for t in targets if isinstance(t, dict) and t.get("type") == "page"]
 
 
-async def evaluate(ws_url: str, expression: str, timeout: float = 10.0) -> Any:
+async def evaluate(ws_url: str, expression: str, timeout: float = 10.0) -> object:
     """The value of `expression` in the page; one websocket per call, so a navigation in between cannot wedge it."""
     params = {"expression": expression, "returnByValue": True, "awaitPromise": True}
     try:

@@ -1,6 +1,7 @@
 """PCSX2 (PlayStation 2), run from the project's own AppImage."""
 import os
 import re
+from typing import Any
 
 from . import inifile
 from .base import Command, Emulator, Firmware
@@ -84,12 +85,12 @@ class Pcsx2(Emulator):
         return name if name and os.path.isfile(os.path.join(self.layout.bios("ps2"), name)) else ""
 
     @staticmethod
-    def _rank(name: str) -> tuple:
+    def _rank(name: str) -> tuple[int, int, str]:
         """Newest American image first, then European, then the rest: "ps2-0230a-20080220.bin" is 2.30, region a."""
         m = re.match(r"ps2-(\d{4})([a-z])", name)
         return ("aej".find(m.group(2)) if m and m.group(2) in "aej" else 3, -int(m.group(1)) if m else 0, name)
 
-    def recommended(self, entries: list[dict]) -> dict | None:
+    def recommended(self, entries: list[dict[str, Any]]) -> dict[str, Any] | None:
         names = {f.md5: f.name for f in self.firmware}
         return min(entries, key=lambda e: self._rank(names.get((e.get("md5_hash") or "").lower(), ""))) if entries else None
 

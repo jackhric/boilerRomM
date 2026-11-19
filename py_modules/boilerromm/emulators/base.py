@@ -3,14 +3,16 @@
 Each emulator's files are split by how replaceable they are. The build and its cache can be fetched again, the
 config is rewritten by prepare(), and saves, states and firmware are the user's: nothing here deletes those.
 """
-import hashlib
 import asyncio
+import hashlib
 import os
 import shutil
 from dataclasses import dataclass
+from typing import Any
 
 from ..games.install import Target, launch_file
 from . import releases
+from .progress import Session
 
 
 @dataclass(frozen=True)
@@ -94,7 +96,7 @@ class Emulator:
     firmware_set = False              # it takes a set of files, not one
     recent_versions = 20              # how many of the project's newest releases to offer besides the latest
 
-    def __init__(self, layout: Layout):
+    def __init__(self, layout: Layout) -> None:
         self.layout = layout
         self.home = layout.emulator(self.id)
         self.executable = os.path.join(self.home, f"{self.id}.AppImage")
@@ -128,7 +130,7 @@ class Emulator:
         """The name of a build as a person would say it; the release's title where the tag is only a commit."""
         return tag
 
-    async def versions(self, session) -> list[dict]:
+    async def versions(self, session: Session) -> list[dict[str, Any]]:
         """The builds that can be installed, the one boilerRomM is tested with first."""
         listed = await releases.versions(session, self.source, self.recent_versions)
         tested = self.source.tag
@@ -138,7 +140,7 @@ class Emulator:
         return [{"tag": v.tag, "name": self.version_label(v.tag, v.title), "prerelease": v.prerelease, "published": v.published,
                  "tested": v.tag == tested} for v in listed]
 
-    async def install(self, session, tag: str = "") -> str:
+    async def install(self, session: Session, tag: str = "") -> str:
         """Installs the tested build, or the build of another release when a tag is given."""
         release = await releases.find(session, self.source, tag)
         await releases.download(session, release, self.executable)
@@ -192,7 +194,7 @@ class Emulator:
         names = list(dict.fromkeys(f.name for f in self.firmware if f.platform == platform))
         return ", ".join(names[:3]) + (", …" if len(names) > 3 else "")
 
-    def compatible(self, entry: dict) -> bool:
+    def compatible(self, entry: dict[str, Any]) -> bool:
         """Whether a firmware file RomM lists ({file_name, md5_hash, ...}) is one this emulator can use, judged
         before it is downloaded. Without a checksum from RomM the name has to do; the download is checked again."""
         md5 = (entry.get("md5_hash") or "").lower()
@@ -200,7 +202,7 @@ class Emulator:
             return any(f.md5 == md5 for f in self.firmware)
         return str(entry.get("file_name", "")).lower().endswith(self.accepts.lower())
 
-    def recommended(self, entries: list[dict]) -> dict | None:
+    def recommended(self, entries: list[dict[str, Any]]) -> dict[str, Any] | None:
         """The one of RomM's compatible files to install when nobody chooses."""
         return entries[0] if entries else None
 
@@ -223,7 +225,7 @@ class Emulator:
                 if os.path.isfile(path) and md5_of(path) in known:
                     os.unlink(path)
 
-    def bios_status(self) -> list[dict]:
+    def bios_status(self) -> list[dict[str, Any]]:
         found = self.firmware_found()
         return [{"platform": p, "folder": self.layout.bios(p), "found": [f.name for f in found if f.platform == p], "ready": self.platform_ready(p),
                  "expects": self.expected_files(p)}
@@ -293,7 +295,7 @@ class Emulator:
         """What to run for a game; `platform` is its RomM slug, for an emulator that runs several."""
         raise NotImplementedError
 
-    def status(self) -> dict:
+    def status(self) -> dict[str, Any]:
         version, firmware = self.version, self.firmware_ready()
         return {"id": self.id, "name": self.name, "system": self.system, "platforms": list(self.platforms), "installed": bool(version),
                 "version": version, "version_name": self.version_name, "firmware": firmware, "requires": self.requires, "ready": bool(version) and firmware,

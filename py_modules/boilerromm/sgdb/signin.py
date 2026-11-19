@@ -65,16 +65,16 @@ def _where(url: str) -> str:
     return ""
 
 
-def _valid(key: Any) -> bool:
+def _valid(key: object) -> bool:
     return isinstance(key, str) and KEY_RE.fullmatch(key) is not None
 
 
 class SgdbSignin:
     def __init__(self, submit: Callable[[str], Awaitable[str]], changed: Callable[[], None], logger: logging.Logger,
-                 list_pages: Callable[[], Awaitable[list[dict]]] = cdp.list_pages,
+                 list_pages: Callable[[], Awaitable[list[dict[str, Any]]]] = cdp.list_pages,
                  evaluate: Callable[[str, str], Awaitable[Any]] = cdp.evaluate,
                  sleep: Callable[[float], Awaitable[None]] = asyncio.sleep, clock: Callable[[], float] = time.monotonic,
-                 timeout_s: float = TIMEOUT_S):
+                 timeout_s: float = TIMEOUT_S) -> None:
         self._submit = submit
         self._changed = changed
         self.log = logger
@@ -85,7 +85,7 @@ class SgdbSignin:
         self._timeout_s = timeout_s
         self.stage = ""
         self.error = ""
-        self.task: asyncio.Task | None = None
+        self.task: asyncio.Task[None] | None = None
         self._reset()
 
     def _reset(self) -> None:
@@ -100,7 +100,7 @@ class SgdbSignin:
     def active(self) -> bool:
         return self.task is not None and not self.task.done()
 
-    def as_dict(self) -> dict:
+    def as_dict(self) -> dict[str, Any]:
         return {"active": self.active, "stage": self.stage, "error": self.error}
 
     def start(self) -> None:
@@ -143,13 +143,13 @@ class SgdbSignin:
             self.log.warning("SteamGridDB sign-in stopped: %s", type(e).__name__)
             self._set("failed", "Sign-in stopped unexpectedly")
 
-    def _pick(self, pages: list[dict]) -> dict | None:
+    def _pick(self, pages: list[dict[str, Any]]) -> dict[str, Any] | None:
         for p in pages:
             if self._target_id and p.get("id") == self._target_id:
                 return p
         return next((p for p in pages if _where(p.get("url", ""))), None)
 
-    async def _eval(self, page: dict, expression: str) -> Any:
+    async def _eval(self, page: dict[str, Any], expression: str) -> object:
         """None when the page is mid-navigation or otherwise does not answer this time."""
         try:
             return await self._evaluate(page["webSocketDebuggerUrl"], expression)

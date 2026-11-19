@@ -5,6 +5,8 @@ import lzma
 import os
 import struct
 import zlib
+from collections.abc import Callable, Iterator
+from typing import BinaryIO
 
 from . import releases
 
@@ -18,7 +20,7 @@ class ArchiveError(releases.ReleaseError):
 class _Reader:
     """The fields of a 7z header."""
 
-    def __init__(self, data: bytes):
+    def __init__(self, data: bytes) -> None:
         self.data = io.BytesIO(data)
 
     def read(self, size: int) -> bytes:
@@ -55,7 +57,7 @@ class _Reader:
 class _Folder:
     """One compressed stream and the files packed into it one after another."""
 
-    def __init__(self, method: bytes, properties: bytes):
+    def __init__(self, method: bytes, properties: bytes) -> None:
         self.method = method
         self.properties = properties
         self.offset = 0
@@ -65,7 +67,7 @@ class _Folder:
         self.sizes: list[int] = []
         self.checksums: list[int | None] = []
 
-    def decoder(self):
+    def decoder(self) -> lzma.LZMADecompressor:
         if self.method == b"\x03\x01\x01":
             d = self.properties[0]
             return lzma.LZMADecompressor(lzma.FORMAT_RAW, filters=[{
@@ -77,7 +79,7 @@ class _Folder:
             return lzma.LZMADecompressor(lzma.FORMAT_RAW, filters=[{"id": lzma.FILTER_LZMA2, "dict_size": size}])
         raise ArchiveError(f"the archive is compressed with a method this reader does not know ({self.method.hex()})")
 
-    def unpack(self, f):
+    def unpack(self, f: BinaryIO) -> Iterator[bytes]:
         """The stream's content, in pieces."""
         decoder = self.decoder()
         f.seek(self.offset)
@@ -109,7 +111,9 @@ def _read_folder(r: _Reader) -> _Folder:
 
 
 def _read_streams(r: _Reader) -> list[_Folder]:
-    start, packed, folders = 0, [], []
+    start = 0
+    packed: list[int] = []
+    folders: list[_Folder] = []
     while kind := r.byte():
         if kind == 0x06:
             start, count = r.number(), r.number()
@@ -184,7 +188,7 @@ def _read_files(r: _Reader) -> list[tuple[str, bool]]:
     return [(name, not e) for name, e in zip(names, empty, strict=True)]
 
 
-def _read_archive(f) -> tuple[list[_Folder], list[str]]:
+def _read_archive(f: BinaryIO) -> tuple[list[_Folder], list[str]]:
     """The archive's streams, and the names of the files in them in the order they are packed."""
     start = f.read(32)
     if len(start) != 32 or start[:6] != b"7z\xbc\xaf\x27\x1c":
@@ -223,7 +227,7 @@ def _read_archive(f) -> tuple[list[_Folder], list[str]]:
     return folders, names
 
 
-def extract_7z(archive: str, wanted) -> int:
+def extract_7z(archive: str, wanted: Callable[[str], str | None]) -> int:
     """Unpacks the files of a 7z archive that `wanted` gives a path for, each checked against the archive's own
     checksum; returns how many. Python reads no 7z itself, and a handheld's system need not have a tool that does:
     this reads the plain LZMA archives libretro publishes."""
@@ -256,14 +260,14 @@ def extract_7z(archive: str, wanted) -> int:
                         if out:
                             out.write(piece)
                             crc = zlib.crc32(piece, crc)
-                    if out and checksum is not None and crc != checksum:
+                    if out and target and checksum is not None and crc != checksum:
                         raise ArchiveError(f"{os.path.basename(target)}: checksum does not match the archive")
                 except BaseException:
-                    if out:
+                    if out and target:
                         out.close()
                         os.unlink(target + ".part")
                     raise
-                if out:
+                if out and target:
                     out.close()
                     os.replace(target + ".part", target)
                     done += 1

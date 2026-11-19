@@ -5,14 +5,16 @@ import shlex
 import tempfile
 import time
 from collections.abc import Awaitable, Callable
+from typing import Any
 
 from .. import emulators
+from ..core import Core
 from ..emulators.progress import Counted
 from ..games.install import Target
 
 
-class EmulatorCommands:
-    async def _emulator_task(self, emulator_id: str, doing: str, work: Callable[[emulators.Emulator], Awaitable[None]]) -> dict:
+class EmulatorCommands(Core):
+    async def _emulator_task(self, emulator_id: str, doing: str, work: Callable[[emulators.Emulator], Awaitable[None]]) -> dict[str, Any]:
         emulator = self.emulators.get(emulator_id)
         if not emulator:
             raise ValueError("Unknown emulator")
@@ -31,7 +33,7 @@ class EmulatorCommands:
         self._changed()
         return self.state()
 
-    async def emulator_versions(self, emulator_id: str) -> list[dict]:
+    async def emulator_versions(self, emulator_id: str) -> list[dict[str, Any]]:
         """The builds on offer, asked from the project at most every ten minutes (GitHub limits anonymous requests)."""
         emulator = self.emulators.get(emulator_id)
         if not emulator:
@@ -51,7 +53,7 @@ class EmulatorCommands:
             self._progress_sent = time.monotonic()
             self._changed()
 
-    async def emulator_install(self, emulator_id: str, tag: str = "") -> dict:
+    async def emulator_install(self, emulator_id: str, tag: str = "") -> dict[str, Any]:
         async def work(emulator: emulators.Emulator) -> None:
             try:
                 async with self._release_session() as session:
@@ -66,7 +68,7 @@ class EmulatorCommands:
                 await self._auto_bios(emulator)
         return await self._emulator_task(emulator_id, "installing", work)
 
-    async def emulators_install_all(self) -> dict:
+    async def emulators_install_all(self) -> dict[str, Any]:
         """Installs every emulator that is not installed, one after another, in the background. Each stands alone:
         one that fails is reported on its own row and the rest carry on."""
         waiting = [e.id for e in self.emulators.values() if not e.version and not self._emulator_busy.get(e.id)]
@@ -79,7 +81,7 @@ class EmulatorCommands:
         self._changed()
         return self.state()
 
-    async def _install_queued(self, waiting: list[str], previous: asyncio.Task | None) -> None:
+    async def _install_queued(self, waiting: list[str], previous: asyncio.Task[None] | None) -> None:
         try:
             if previous:
                 await asyncio.gather(previous, return_exceptions=True)
@@ -91,22 +93,22 @@ class EmulatorCommands:
                 if self._emulator_busy.get(emulator_id) == "queued":
                     self._emulator_busy.pop(emulator_id, None)
 
-    async def emulator_uninstall(self, emulator_id: str) -> dict:
+    async def emulator_uninstall(self, emulator_id: str) -> dict[str, Any]:
         async def work(emulator: emulators.Emulator) -> None:
             emulator.uninstall()
         return await self._emulator_task(emulator_id, "uninstalling", work)
 
-    async def emulator_reset(self, emulator_id: str) -> dict:
+    async def emulator_reset(self, emulator_id: str) -> dict[str, Any]:
         async def work(emulator: emulators.Emulator) -> None:
             emulator.reset_config()
         return await self._emulator_task(emulator_id, "resetting", work)
 
-    async def _romm_firmware(self, wanted: list[emulators.Emulator]) -> dict[str, tuple[list[dict], int]]:
+    async def _romm_firmware(self, wanted: list[emulators.Emulator]) -> dict[str, tuple[list[dict[str, Any]], int]]:
         """What RomM holds for each emulator: (the files it can use, how many RomM listed for its platforms)."""
         if not self.client or not self.settings.paired:
             raise RuntimeError("Connect to RomM first")
         ids = {p["fs_slug"]: p["id"] for p in await self.client.platforms()}
-        listed: dict[str, list[dict]] = {}
+        listed: dict[str, list[dict[str, Any]]] = {}
         out = {}
         for emulator in wanted:
             usable, count = [], 0
@@ -120,7 +122,7 @@ class EmulatorCommands:
             out[emulator.id] = (usable, count)
         return out
 
-    async def bios_available(self) -> dict:
+    async def bios_available(self) -> dict[str, Any]:
         """The firmware files on the RomM server each emulator could install, for the BIOS page's menus."""
         wanted = [e for e in self.emulators.values() if e.bios_platforms()]
         try:
@@ -142,6 +144,9 @@ class EmulatorCommands:
         """Downloads firmware from RomM for the emulator: (kept, listed). `only` names the files by RomM's id; without
         it, a set is fetched whole and otherwise the one recommended file. Each download goes through the emulator's
         own check, so a file that turns out not to be what it looked like is not kept."""
+        client = self.client
+        if not client:
+            raise RuntimeError("Connect to RomM first")
         usable, listed = (await self._romm_firmware([emulator]))[emulator.id]
         if only:
             chosen = [e for e in usable if e["id"] in only]
@@ -153,13 +158,13 @@ class EmulatorCommands:
         with tempfile.TemporaryDirectory(dir=self.data_dir if os.path.isdir(self.data_dir) else None) as scratch:
             for entry in chosen:
                 path = os.path.join(scratch, os.path.basename(entry["file_name"]))
-                await self.client.fetch_firmware(entry["id"], entry["file_name"], path)
+                await client.fetch_firmware(entry["id"], entry["file_name"], path)
                 if emulator.add_firmware(path):
                     kept += 1
                 os.unlink(path)
         return kept, listed
 
-    async def emulator_bios_install(self, emulator_id: str, firmware_ids: list[int] | None = None) -> dict:
+    async def emulator_bios_install(self, emulator_id: str, firmware_ids: list[int] | None = None) -> dict[str, Any]:
         async def work(emulator: emulators.Emulator) -> None:
             kept, listed = await self._fetch_bios(emulator, [int(i) for i in firmware_ids or []])
             if not kept:
@@ -168,7 +173,7 @@ class EmulatorCommands:
             await emulator.install_firmware()
         return await self._emulator_task(emulator_id, "fetching", work)
 
-    async def emulator_bios_uninstall(self, emulator_id: str) -> dict:
+    async def emulator_bios_uninstall(self, emulator_id: str) -> dict[str, Any]:
         async def work(emulator: emulators.Emulator) -> None:
             emulator.remove_firmware()
         return await self._emulator_task(emulator_id, "removing", work)
@@ -230,7 +235,7 @@ class EmulatorCommands:
             f.write("#!/bin/bash\n" + "\n".join(lines) + "\n")
         os.chmod(path, 0o755)
 
-    def launch_target(self, rom_id: int) -> dict:
+    def launch_target(self, rom_id: int) -> dict[str, Any]:
         """What a Steam shortcut for this game runs: the launcher with the game's id."""
         game = self.library.games.get(int(rom_id))
         if not game:
@@ -252,12 +257,12 @@ class EmulatorCommands:
         if not emulator.version:
             return f"{emulator.name} is not installed. Install it in Settings, under Emulators."
         if self._bios_missing(emulator, slug):
-            return f"{emulator.name} needs {emulator.requires}, and RomM did not have one. Add it in Settings, under BIOS."
+            return f"{emulator.name} needs {emulator.requires}, and RomM did not have one. Add it in Settings, under BIOS Files."
         if slug in emulator.bios_platforms() and not emulator.firmware_installed:
-            return f"{emulator.name} could not install its firmware. Try again in Settings, under BIOS."
+            return f"{emulator.name} could not install its firmware. Try again in Settings, under BIOS Files."
         return ""
 
-    async def play_target(self, rom_id: int) -> dict:
+    async def play_target(self, rom_id: int) -> dict[str, Any]:
         """`launch_target` for a game about to be started, after one more try at getting missing firmware."""
         game = self.library.games.get(int(rom_id))
         if not game:

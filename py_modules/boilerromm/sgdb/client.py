@@ -4,7 +4,7 @@ The key goes only into the Authorization header; no error message, log line or s
 """
 import asyncio
 import re
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, Collection, Iterable
 from typing import Any
 from urllib.parse import quote, urlsplit
 
@@ -21,17 +21,17 @@ MAX_429_RETRIES = 4
 
 
 class SgdbError(Exception):
-    def __init__(self, status: int, message: str):
+    def __init__(self, status: int, message: str) -> None:
         self.status = status
         self.message = message
         super().__init__(message)
 
 
-def _dims(sizes) -> str:
+def _dims(sizes: Iterable[tuple[int, int]]) -> str:
     return ",".join(f"{w}x{h}" for w, h in sizes)
 
 
-def _param(v: Any) -> str:
+def _param(v: object) -> str:
     if isinstance(v, bool):
         return "true" if v else "false"
     if isinstance(v, (list, tuple)):
@@ -53,7 +53,7 @@ def image_format(data: bytes) -> str:
     return ""
 
 
-def best_by_score(items: list[dict], sizes=None, mime: str = "") -> str:
+def best_by_score(items: list[dict[str, Any]], sizes: Collection[tuple[int, int]] | None = None, mime: str = "") -> str:
     """The highest-scored item (first on ties) of an allowed size and type."""
     best = None
     for it in items:
@@ -65,29 +65,29 @@ def best_by_score(items: list[dict], sizes=None, mime: str = "") -> str:
             continue
         if best is None or (it.get("score") or 0) > (best.get("score") or 0):
             best = it
-    return best["url"] if best else ""
+    return str(best["url"]) if best else ""
 
 
-def best_icon(items: list[dict]) -> str:
+def best_icon(items: list[dict[str, Any]]) -> str:
     """The largest PNG icon up to 256 px, else the smallest larger one (Steam wants a PNG, never an .ico)."""
     pngs = [it for it in items if it.get("mime") == "image/png" and it.get("url")
             and isinstance(it.get("width"), int) and isinstance(it.get("height"), int)]
     small = [it for it in pngs if max(it["width"], it["height"]) <= ICON_MAX]
     if small:
-        return max(small, key=lambda it: (max(it["width"], it["height"]), it.get("score") or 0))["url"]
+        return str(max(small, key=lambda it: (max(it["width"], it["height"]), it.get("score") or 0))["url"])
     if pngs:
-        return min(pngs, key=lambda it: (max(it["width"], it["height"]), -(it.get("score") or 0)))["url"]
+        return str(min(pngs, key=lambda it: (max(it["width"], it["height"]), -(it.get("score") or 0)))["url"])
     return ""
 
 
 class SgdbClient:
-    def __init__(self, key: str, session_factory: Callable[[], Any], user_agent: str,
-                 sleep: Callable[[float], Awaitable[None]] = asyncio.sleep):
+    def __init__(self, key: str, session_factory: Callable[[], aiohttp.ClientSession], user_agent: str,
+                 sleep: Callable[[float], Awaitable[None]] = asyncio.sleep) -> None:
         self._key = key
         self._factory = session_factory
         self._ua = user_agent
         self._sleep = sleep
-        self._session = None
+        self._session: aiohttp.ClientSession | None = None
         self._sem = asyncio.Semaphore(2)
 
     async def close(self) -> None:
@@ -95,12 +95,12 @@ class SgdbClient:
             await self._session.close()
             self._session = None
 
-    def _get_session(self):
+    def _get_session(self) -> aiohttp.ClientSession:
         if self._session is None or getattr(self._session, "closed", False):
             self._session = self._factory()
         return self._session
 
-    async def _get(self, path: str, params: dict | None = None) -> Any:
+    async def _get(self, path: str, params: dict[str, Any] | None = None) -> Any:  # noqa: ANN401
         headers = {"Authorization": f"Bearer {self._key}", "Accept": "application/json", "User-Agent": self._ua}
         query = {k: _param(v) for k, v in (params or {}).items()}
         delay = 5.0
@@ -124,7 +124,7 @@ class SgdbClient:
                 await self._sleep(wait)
         raise SgdbError(429, "SteamGridDB rate limit")
 
-    async def _assets(self, kind: str, game_id: int, filters: dict) -> list[dict]:
+    async def _assets(self, kind: str, game_id: int, filters: dict[str, Any]) -> list[dict[str, Any]]:
         try:
             data = await self._get(f"/{kind}/game/{int(game_id)}", filters)
         except SgdbError as e:
@@ -137,7 +137,7 @@ class SgdbClient:
         await self._get("/search/autocomplete/a")
         return True
 
-    async def search(self, term: str) -> list[dict]:
+    async def search(self, term: str) -> list[dict[str, Any]]:
         try:
             return list(await self._get(f"/search/autocomplete/{quote(term, safe='')}") or [])
         except SgdbError as e:
@@ -152,22 +152,22 @@ class SgdbClient:
             return None
         for hit in await self.search(name):
             if title_key(str(hit.get("name") or "")) == want and isinstance(hit.get("id"), int):
-                return hit["id"]
+                return int(hit["id"])
         return None
 
-    async def grids(self, game_id: int, **filters) -> list[dict]:
+    async def grids(self, game_id: int, **filters: str | int) -> list[dict[str, Any]]:
         return await self._assets("grids", game_id, filters)
 
-    async def heroes(self, game_id: int, **filters) -> list[dict]:
+    async def heroes(self, game_id: int, **filters: str | int) -> list[dict[str, Any]]:
         return await self._assets("heroes", game_id, filters)
 
-    async def logos(self, game_id: int, **filters) -> list[dict]:
+    async def logos(self, game_id: int, **filters: str | int) -> list[dict[str, Any]]:
         return await self._assets("logos", game_id, filters)
 
-    async def icons(self, game_id: int, **filters) -> list[dict]:
+    async def icons(self, game_id: int, **filters: str | int) -> list[dict[str, Any]]:
         return await self._assets("icons", game_id, filters)
 
-    async def pick_assets(self, game_id: int) -> dict:
+    async def pick_assets(self, game_id: int) -> dict[str, Any]:
         grid, wide, hero, logo, icon = await asyncio.gather(
             self.grids(game_id, dimensions=_dims(PORTRAIT), **SAFE),
             self.grids(game_id, dimensions=_dims(WIDE), **SAFE),
@@ -212,12 +212,12 @@ def _retry_after(value: str | None) -> float:
         return 0.0
 
 
-def _errors(body: dict) -> str:
+def _errors(body: dict[str, Any]) -> str:
     errs = body.get("errors")
     return "; ".join(map(str, errs))[:200] if isinstance(errs, list) else ""
 
 
-async def _message(r) -> str:
+async def _message(r: aiohttp.ClientResponse) -> str:
     if r.status == 401:
         return "Invalid SteamGridDB key"
     try:

@@ -5,10 +5,12 @@ import os
 import shutil
 import tempfile
 import zipfile
+from typing import Any
 
 from ..games.install import Target, launch_file
 from . import releases
-from .base import Command, Emulator, Firmware
+from .base import Command, Emulator, Firmware, Layout
+from .progress import Session
 from .releases import Source
 
 TAG = "v.0.21.0"
@@ -51,7 +53,7 @@ def _is_overlay(path: str) -> bool:
     return os.path.splitext(path)[0].endswith(OVERLAYS)
 
 
-def _update_json(path: str, values: dict[str, dict]) -> None:
+def _update_json(path: str, values: dict[str, dict[str, Any]]) -> None:
     """Sets keys in the sections of a JSON file, keeping everything else in it."""
     try:
         with open(path, encoding="utf-8") as f:
@@ -91,7 +93,7 @@ class ShadPs4(Emulator):
     requires = "PS4 system modules"
     source = Source("shadps4-emu/shadPS4", r"^shadps4-linux-sdl-.*\.zip$", TAG)
 
-    def __init__(self, layout):
+    def __init__(self, layout: Layout) -> None:
         super().__init__(layout)
         # shadPS4 has one folder for everything, under XDG_DATA_HOME, and no way to move its config out of it.
         self.config_dir = os.path.join(self.data_dir, "shadPS4")
@@ -107,7 +109,7 @@ class ShadPs4(Emulator):
         return tag.removeprefix("v.")
 
     # Build
-    async def install(self, session, tag: str = "") -> str:
+    async def install(self, session: Session, tag: str = "") -> str:
         release = await releases.find(session, self.source, tag)
         archive = self.executable + ".zip"
         await releases.download(session, release, archive)
@@ -152,7 +154,7 @@ class ShadPs4(Emulator):
     def bios_platforms(self) -> tuple[str, ...]:
         return ("ps4",)
 
-    def compatible(self, entry: dict) -> bool:
+    def compatible(self, entry: dict[str, Any]) -> bool:
         return str(entry.get("file_name", "")).lower().endswith(".sprx")
 
     def firmware_label(self) -> str:
@@ -203,10 +205,11 @@ class ShadPs4(Emulator):
     def launch_file(self, target: Target) -> str:
         """An unpacked game is launched as the folder holding its eboot.bin, wherever below the download that is."""
         if target.is_dir:
+            inner: list[str] = []
             try:
                 inner = sorted(os.path.join(target.path, n) for n in os.listdir(target.path))
             except OSError:
-                inner = []
+                pass
             inner.sort(key=_is_overlay)
             for folder in (target.path, *inner):
                 if _is_game_folder(folder):

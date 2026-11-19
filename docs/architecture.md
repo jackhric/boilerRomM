@@ -23,7 +23,8 @@ Settings > Storage, Uninstall, and Steam's Downloads page while it downloads.
 
 | Where | Owns |
 | --- | --- |
-| `app.py` | `App`: builds the rest, takes its commands from the four `commands.py` classes below, emits the events, and resets everything |
+| `app.py` | `App`: builds the rest, takes its commands from the four `commands.py` classes below, and resets everything |
+| `core.py` | `Core`, the base of the `commands.py` classes: declares what `App` builds so they are type-checked against it, and emits the events |
 | `settings.py`, `jsonfile.py` | the settings file (server, token, device id, ROM folder, SteamGridDB key) and the one atomic JSON writer |
 | `romm/` | `client.py` the RomM client, `pairing.py` the device code flow, `library.py` platforms and games; `commands.py`: server address, pairing, connection check, library refresh |
 | `games/` | `ledger.py` the install records and their check against the disk, `install.py` where a game lives on disk, `downloads.py` the queue (one at a time, per-file `.part` with resume), `shortcuts.py` which Steam shortcut belongs to which game, `video.py` trailer streams (runs the vendored `yt_dlp` from `py_modules/`, found by this file's depth); `commands.py`: what is installed, download, remove, storage |
@@ -55,7 +56,7 @@ records depend on them.
 
 ```sh
 pnpm typecheck && pnpm test && pnpm build   # frontend: types, tests/{steam,domain,app}, bundle
-uv run ruff check py_modules/boilerromm main.py tests && uv run pytest   # backend
+uv run ruff check py_modules/boilerromm main.py tests && uv run ty check && uv run pytest   # backend
 ```
 
 `tests/test_contract.py` fails when the frontend and backend disagree on a call name, an event name or the keys

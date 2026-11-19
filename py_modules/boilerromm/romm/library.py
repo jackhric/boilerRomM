@@ -1,13 +1,17 @@
 """The RomM library as the panel shows it: platforms and games, each game with its status on this device."""
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
+from typing import Any
 
 from ..sgdb.client import KINDS as ART_KINDS
 from .client import RommClient
 
 
-def _score(value) -> int | None:
+def _score(value: str | float | None) -> int | None:
     """RomM passes IGDB's 0-100 ratings through as strings."""
+    if value is None:
+        return None
     try:
         n = round(float(value))
     except (TypeError, ValueError):
@@ -33,10 +37,10 @@ class Game:
     genres: list[str] = field(default_factory=list)
     rating: float | None = None
     sgdb_id: int | None = None
-    raw: dict = field(default_factory=dict, repr=False)
+    raw: dict[str, Any] = field(default_factory=dict, repr=False)
 
     @classmethod
-    def from_rom(cls, rom: dict, client: RommClient) -> "Game":
+    def from_rom(cls, rom: dict[str, Any], client: RommClient) -> "Game":
         cover = rom.get("path_cover_small") or rom.get("url_cover") or ""
         large = rom.get("path_cover_large") or rom.get("url_cover") or ""
         meta = rom.get("metadatum") or {}
@@ -61,7 +65,7 @@ class Game:
             raw=rom,
         )
 
-    def details(self, client: RommClient) -> dict:
+    def details(self, client: RommClient) -> dict[str, Any]:
         """The long fields the storefront shows for one game at a time (kept out of the snapshot)."""
         r, meta = self.raw, self.raw.get("metadatum") or {}
         igdb = r.get("igdb_metadata") or {}
@@ -95,10 +99,10 @@ class Game:
         }
 
 class Library:
-    def __init__(self):
-        self.platforms: list[dict] = []
+    def __init__(self) -> None:
+        self.platforms: list[dict[str, Any]] = []
         self.games: dict[int, Game] = {}
-        self.recommended: list[dict] = []
+        self.recommended: list[dict[str, Any]] = []
         self.loaded_at = 0.0
         self.loading = False
         self.error = ""
@@ -125,7 +129,7 @@ class Library:
         finally:
             self.loading = False
 
-    def pick_recommendations(self, feed: list[dict]) -> list[dict]:
+    def pick_recommendations(self, feed: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """RomM's feed reduced to what the storefront shows: the game (if we list it), why, and the seed game."""
         out = []
         for r in feed:
@@ -141,7 +145,7 @@ class Library:
             })
         return out
 
-    def snapshot(self, status_of, art_of=None) -> dict:
+    def snapshot(self, status_of: Callable[[int], str], art_of: Callable[[Game], dict[str, str]] | None = None) -> dict[str, Any]:
         games = []
         for g in sorted(self.games.values(), key=lambda g: (g.platform.lower(), g.name.lower())):
             status = status_of(g.rom_id)

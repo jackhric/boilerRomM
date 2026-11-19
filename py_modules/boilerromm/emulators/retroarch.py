@@ -6,9 +6,11 @@ import shutil
 import tempfile
 import zipfile
 import zlib
+from typing import Any
 
 from . import releases
-from .base import Command, Emulator, Firmware, md5_of
+from .base import Command, Emulator, Firmware, Layout, md5_of
+from .progress import Session
 from .sevenzip import ArchiveError, extract_7z
 
 # libretro publishes no checksum for its builds, so the pinned one carries the size and checksum it had when it was
@@ -148,11 +150,11 @@ def read_cfg(path: str, key: str, fallback: str = "") -> str:
     return fallback
 
 
-async def _fetch(session, url: str) -> bytes:
+async def _fetch(session: Session, url: str) -> bytes:
     async with session.get(url, headers={"User-Agent": releases.HEADERS["User-Agent"]}) as r:
         if r.status != 200:
             raise releases.ReleaseError(f"{url.rsplit('/', 1)[-1]}: HTTP {r.status}")
-        return await r.read()
+        return bytes(await r.read())
 
 
 class RetroArch(Emulator):
@@ -165,7 +167,7 @@ class RetroArch(Emulator):
     platforms = tuple(CORES)
     firmware = tuple(Firmware(platform, name, md5) for platform, files in BIOS.items() for name, md5 in files)
 
-    def __init__(self, layout):
+    def __init__(self, layout: Layout) -> None:
         super().__init__(layout)
         self.cores_dir = os.path.join(self.home, "cores")
         self.info_dir = os.path.join(self.home, "info")
@@ -185,10 +187,10 @@ class RetroArch(Emulator):
         return os.path.join(self.cores_dir, f"{CORES[platform]}_libretro.so")
 
     # Build
-    async def versions(self, session) -> list[dict]:
+    async def versions(self, session: Session) -> list[dict[str, Any]]:
         return [{"tag": TAG, "name": TAG, "prerelease": False, "published": PUBLISHED, "tested": True}]
 
-    async def install(self, session, tag: str = "") -> str:
+    async def install(self, session: Session, tag: str = "") -> str:
         if tag and tag != TAG:
             raise releases.ReleaseError(f"RetroArch {tag}: only {TAG} can be installed")
         archive = os.path.join(self.cache_dir, "RetroArch.7z")
@@ -218,7 +220,7 @@ class RetroArch(Emulator):
             raise ArchiveError("RetroArch.7z: the archive holds no AppImage")
         os.chmod(self.executable, 0o755)
 
-    async def _install_cores(self, session) -> None:
+    async def _install_cores(self, session: Session) -> None:
         # One line per core: the day it was built, the checksum of the core inside the zip, the zip's name.
         index = (await _fetch(session, f"{CORES_URL}/.index-extended")).decode()
         checksums = {fields[2]: fields[1] for fields in (line.split() for line in index.splitlines()) if len(fields) == 3}

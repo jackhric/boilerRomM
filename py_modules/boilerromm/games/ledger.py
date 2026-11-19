@@ -18,6 +18,7 @@ import logging
 import os
 import time
 from dataclasses import asdict, dataclass, field, fields
+from typing import Any
 
 from .. import jsonfile
 
@@ -39,14 +40,14 @@ class Install:
     state: str = QUEUED
     # What RomM listed: [{"path": relative to the game's folder ("" for a single-file game), "size": bytes}].
     # Empty until RomM has answered once.
-    files: list[dict] = field(default_factory=list)
+    files: list[dict[str, Any]] = field(default_factory=list)
     error: str = ""
     queued_at: float = 0
     updated_at: float = 0
     completed_at: float = 0
 
     @classmethod
-    def from_dict(cls, d: dict) -> "Install":
+    def from_dict(cls, d: dict[str, Any]) -> "Install":
         known = {f.name for f in fields(cls)}
         install = cls(**{k: v for k, v in d.items() if k in known})
         if install.state not in STATES:
@@ -68,7 +69,7 @@ class Check:
         return self.known and not self.missing
 
 
-def file_path(install: Install, target_path: str, entry: dict) -> str:
+def file_path(install: Install, target_path: str, entry: dict[str, Any]) -> str:
     return os.path.join(target_path, entry["path"]) if entry["path"] else target_path
 
 
@@ -95,7 +96,7 @@ def check(install: Install, target_path: str) -> Check:
 class Ledger:
     """`path` None keeps the ledger in memory only (tests)."""
 
-    def __init__(self, path: str | None = None, log: logging.Logger | None = None):
+    def __init__(self, path: str | None = None, log: logging.Logger | None = None) -> None:
         self.path = path
         self.log = log or logging.getLogger(__name__)
         self._installs: dict[int, Install] = {}
@@ -125,6 +126,12 @@ class Ledger:
     def get(self, rom_id: int) -> Install | None:
         return self._installs.get(int(rom_id))
 
+    def require(self, rom_id: int) -> Install:
+        install = self.get(rom_id)
+        if install is None:
+            raise LookupError(f"no install record for rom {rom_id}")
+        return install
+
     def all(self) -> list[Install]:
         return list(self._installs.values())
 
@@ -139,7 +146,7 @@ class Ledger:
         self.log.info("install %s (%s): %s -> %s", install.rom_id, install.name, old.state if old else "none", install.state)
         return install
 
-    def update(self, rom_id: int, **changes) -> Install | None:
+    def update(self, rom_id: int, **changes: object) -> Install | None:
         """Changes fields of a record (`state=`, `files=`, `error=` ...); None when the game has no record."""
         install = self._installs.get(int(rom_id))
         if not install:

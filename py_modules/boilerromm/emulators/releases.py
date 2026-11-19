@@ -3,6 +3,9 @@ import hashlib
 import os
 import re
 from dataclasses import dataclass
+from typing import Any
+
+from .progress import Session
 
 API = "https://api.github.com"
 HEADERS = {"Accept": "application/vnd.github+json", "User-Agent": "boilerRomM/1.0"}
@@ -38,14 +41,14 @@ class Version:
     title: str = ""
 
 
-async def _json(session, source: Source, path: str):
+async def _json(session: Session, source: Source, path: str) -> Any:  # noqa: ANN401
     async with session.get(f"{API}/repos/{source.repo}/{path}", headers=HEADERS) as r:
         if r.status != 200:
             raise ReleaseError(f"{source.repo} {path}: HTTP {r.status}")
         return await r.json()
 
 
-async def versions(session, source: Source, recent: int = 20) -> list[Version]:
+async def versions(session: Session, source: Source, recent: int = 20) -> list[Version]:
     """The builds worth offering: the latest stable release, then the `recent` newest releases of any kind."""
     found = []
     try:
@@ -63,7 +66,7 @@ async def versions(session, source: Source, recent: int = 20) -> list[Version]:
     return list(out.values())
 
 
-async def find(session, source: Source, tag: str = "") -> Release:
+async def find(session: Session, source: Source, tag: str = "") -> Release:
     """The source's build in the release `tag`, or in the release the source names when no tag is given."""
     tag = tag or source.tag
     data = await _json(session, source, f"releases/tags/{tag}" if tag else "releases/latest")
@@ -75,7 +78,7 @@ async def find(session, source: Source, tag: str = "") -> Release:
     raise ReleaseError(f"{source.repo} {data.get('tag_name', '')}: no asset matches {source.asset}")
 
 
-async def download(session, release: Release, dest: str) -> None:
+async def download(session: Session, release: Release, dest: str) -> None:
     """Writes the asset to `dest` as an executable; a download that does not match the release leaves nothing behind."""
     os.makedirs(os.path.dirname(dest), exist_ok=True)
     part = dest + ".part"

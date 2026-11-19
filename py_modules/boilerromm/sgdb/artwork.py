@@ -12,8 +12,10 @@ import shutil
 import tempfile
 import time
 from collections.abc import Callable, Iterable
+from typing import Any
 
 from .. import jsonfile
+from ..romm.library import Game
 from .client import KINDS, SgdbClient, SgdbError, title_key
 
 EMPTY = {k: "" for k in KINDS}
@@ -25,12 +27,12 @@ def match_key(sgdb_id: int | None, name: str) -> str:
 
 
 class ArtCache:
-    def __init__(self, dir: str):
+    def __init__(self, dir: str) -> None:
         self.root = os.path.join(dir, "sgdb")
         self.index_path = os.path.join(self.root, "index.json")
-        self._index: dict[int, dict] = {}
+        self._index: dict[int, dict[str, Any]] = {}
         self._dirty = False
-        self._inflight: dict[int, asyncio.Future] = {}
+        self._inflight: dict[int, asyncio.Future[dict[str, Any]]] = {}
         try:
             with open(self.index_path, encoding="utf-8") as f:
                 self._index = {int(k): v for k, v in json.load(f).items() if isinstance(v, dict)}
@@ -42,18 +44,18 @@ class ArtCache:
         shutil.rmtree(self.root, ignore_errors=True)
         self._index, self._dirty = {}, False
 
-    def get(self, rom_id: int, sgdb_id: int | None, name: str) -> dict | None:
+    def get(self, rom_id: int, sgdb_id: int | None, name: str) -> dict[str, Any] | None:
         e = self._index.get(int(rom_id))
         return e if e and e.get("match") == match_key(sgdb_id, name) else None
 
-    def urls(self, rom_id: int, sgdb_id: int | None, name: str) -> dict:
+    def urls(self, rom_id: int, sgdb_id: int | None, name: str) -> dict[str, Any]:
         e = self.get(rom_id, sgdb_id, name)
         return {k: e.get(k, "") for k in KINDS} if e else dict(EMPTY)
 
-    def count(self, games: Iterable) -> int:
+    def count(self, games: Iterable[Game]) -> int:
         return sum(1 for g in games if self.get(g.rom_id, g.sgdb_id, g.name))
 
-    def put(self, rom_id: int, sgdb_id: int | None, name: str, resolved: int | None, urls: dict) -> dict:
+    def put(self, rom_id: int, sgdb_id: int | None, name: str, resolved: int | None, urls: dict[str, Any]) -> dict[str, Any]:
         old = self._index.get(int(rom_id))
         if old and old.get("sgdb_id"):
             for k in KINDS:
@@ -100,7 +102,7 @@ class ArtCache:
                 pass
 
     async def ensure(self, client: SgdbClient, rom_id: int, sgdb_id: int | None, name: str,
-                     persist: bool = True) -> tuple[dict, bool]:
+                     persist: bool = True) -> tuple[dict[str, Any], bool]:
         """The cached entry, fetching it first when missing; the flag says whether it was fetched now.
 
         Concurrent callers for one game share a single lookup (the game page and the prefetch often overlap)."""
@@ -122,7 +124,7 @@ class ArtCache:
             fut.cancel()
         self._inflight.clear()
 
-    async def _lookup(self, client: SgdbClient, rom_id: int, sgdb_id: int | None, name: str) -> dict:
+    async def _lookup(self, client: SgdbClient, rom_id: int, sgdb_id: int | None, name: str) -> dict[str, Any]:
         try:
             resolved = sgdb_id or await client.find(name)
             urls = await client.pick_assets(resolved) if resolved else EMPTY
@@ -138,12 +140,12 @@ class ArtPrefetch:
     MAX_FAILURES = 5
 
     def __init__(self, cache: ArtCache, changed: Callable[[], None], on_error: Callable[[SgdbError], None],
-                 logger: logging.Logger):
+                 logger: logging.Logger) -> None:
         self.cache = cache
         self.changed = changed
         self.on_error = on_error
         self.log = logger
-        self.task: asyncio.Task | None = None
+        self.task: asyncio.Task[None] | None = None
         self.done = 0
         self.total = 0
 
@@ -151,9 +153,9 @@ class ArtPrefetch:
     def running(self) -> bool:
         return self.task is not None and not self.task.done()
 
-    def start(self, client: SgdbClient, games: Iterable) -> None:
+    def start(self, client: SgdbClient, games: Iterable[Game]) -> None:
         todo = sorted((g for g in games if not self.cache.get(g.rom_id, g.sgdb_id, g.name)), key=lambda g: g.rom_id)
-        if self.running:
+        if self.task and not self.task.done():
             self.task.cancel()
         self.done, self.total = 0, len(todo)
         if todo:
@@ -170,13 +172,13 @@ class ArtPrefetch:
             except (asyncio.CancelledError, Exception):
                 pass
 
-    async def _run(self, client: SgdbClient, todo: list) -> None:
-        queue: asyncio.Queue = asyncio.Queue()
+    async def _run(self, client: SgdbClient, todo: list[Game]) -> None:
+        queue: asyncio.Queue[Game] = asyncio.Queue()
         for g in todo:
             queue.put_nowait(g)
         failures = 0
 
-        async def worker():
+        async def worker() -> None:
             nonlocal failures
             while not queue.empty():
                 g = queue.get_nowait()
@@ -200,7 +202,10 @@ class ArtPrefetch:
                 tg.create_task(worker())
                 tg.create_task(worker())
         except* SgdbError as eg:
-            self.on_error(eg.exceptions[0])
+            first = eg.exceptions[0]
+            while isinstance(first, BaseExceptionGroup):
+                first = first.exceptions[0]
+            self.on_error(first)
         finally:
             self.cache.save()
             self.changed()

@@ -11,7 +11,7 @@ MIN_VERSION = (5, 4, 1)
 
 
 class RommError(Exception):
-    def __init__(self, status: int, detail: Any, url: str = ""):
+    def __init__(self, status: int, detail: object, url: str = "") -> None:
         self.status = status
         self.detail = detail
         self.url = url
@@ -59,7 +59,7 @@ def ssl_context() -> ssl.SSLContext:
 
 
 class RommClient:
-    def __init__(self, base_url: str, token: str = "", timeout: float = 20):
+    def __init__(self, base_url: str, token: str = "", timeout: float = 20) -> None:
         self.base_url = normalize_url(base_url)
         self.token = token
         self._timeout = aiohttp.ClientTimeout(total=timeout)
@@ -77,7 +77,7 @@ class RommClient:
             )
         return self._session
 
-    async def request(self, method: str, path: str, *, json: Any = None, params: dict | None = None) -> Any:
+    async def request(self, method: str, path: str, *, json: object = None, params: dict[str, Any] | None = None) -> Any:  # noqa: ANN401
         url = self.base_url + path
         headers = {"Accept": "application/json"}
         if self.token:
@@ -99,38 +99,38 @@ class RommClient:
         return path if "://" in path else self.base_url + path
 
     # Open endpoints
-    async def heartbeat(self) -> dict:
+    async def heartbeat(self) -> dict[str, Any]:
         return await self.request("GET", "/api/heartbeat")
 
-    async def device_auth_init(self, payload: dict) -> dict:
+    async def device_auth_init(self, payload: dict[str, Any]) -> dict[str, Any]:
         return await self.request("POST", "/api/auth/device/init", json=payload)
 
-    async def device_auth_token(self, device_code: str) -> dict:
+    async def device_auth_token(self, device_code: str) -> dict[str, Any]:
         return await self.request("POST", "/api/auth/device/token", json={"device_code": device_code})
 
     # Authenticated
-    async def me(self) -> dict:
+    async def me(self) -> dict[str, Any]:
         return await self.request("GET", "/api/users/me")
 
-    async def update_device(self, device_id: str, payload: dict) -> dict:
+    async def update_device(self, device_id: str, payload: dict[str, Any]) -> dict[str, Any]:
         return await self.request("PUT", f"/api/devices/{quote(device_id, safe='')}", json=payload)
 
-    async def platforms(self) -> list[dict]:
+    async def platforms(self) -> list[dict[str, Any]]:
         return await self.request("GET", "/api/platforms")
 
-    async def recommendations(self, limit: int = 20) -> list[dict]:
+    async def recommendations(self, limit: int = 20) -> list[dict[str, Any]]:
         """RomM's personalised feed: [{rom, score, reasons: [{facet, value}], seed_rom_id, seed_rom_name}]."""
         return await self.request("GET", "/api/recommendations", params={"limit": limit})
 
-    async def similar(self, rom_id: int, limit: int = 12) -> list[dict]:
+    async def similar(self, rom_id: int, limit: int = 12) -> list[dict[str, Any]]:
         return await self.request("GET", f"/api/roms/{rom_id}/similar", params={"limit": limit})
 
-    async def rom(self, rom_id: int) -> dict:
+    async def rom(self, rom_id: int) -> dict[str, Any]:
         return await self.request("GET", f"/api/roms/{rom_id}")
 
-    async def roms(self, limit: int = 500) -> list[dict]:
+    async def roms(self, limit: int = 500) -> list[dict[str, Any]]:
         """Every ROM, in pages (the list endpoint's extras are switched off; `files` is empty here)."""
-        items: list[dict] = []
+        items: list[dict[str, Any]] = []
         while True:
             page = await self.request("GET", "/api/roms", params={
                 "limit": limit, "offset": len(items), "order_by": "name", "order_dir": "asc",
@@ -140,7 +140,7 @@ class RommClient:
             if len(items) >= page.get("total", 0) or not page["items"]:
                 return items
 
-    async def firmware(self, platform_id: int) -> list[dict]:
+    async def firmware(self, platform_id: int) -> list[dict[str, Any]]:
         """The firmware files RomM holds for a platform: [{id, file_name, file_size_bytes, md5_hash, ...}]."""
         return await self.request("GET", "/api/firmware", params={"platform_id": platform_id})
 

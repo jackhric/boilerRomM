@@ -4,11 +4,14 @@ import base64
 import os
 import shutil
 from dataclasses import dataclass
+from typing import Any
 
+from ..emulators.commands import EmulatorCommands
 from ..games import ledger as L
 from ..games.downloads import as_game, manifest
 from ..games.install import InstallLocation, Target
 from ..games.ledger import Install
+from ..sgdb.commands import ArtworkCommands
 
 
 @dataclass(frozen=True)
@@ -20,7 +23,7 @@ class Held:
     state: str
 
 
-class GameCommands:
+class GameCommands(EmulatorCommands, ArtworkCommands):
     def _target(self, install: Install) -> Target:
         return self.location.target(install.slug, install.fs_name, install.single_file)
 
@@ -39,7 +42,7 @@ class GameCommands:
         h = (self.held() if held is None else held).get(rom_id)
         return h.state if h else "available"
 
-    def installs(self, held: dict[int, "Held"] | None = None) -> list[dict]:
+    def installs(self, held: dict[int, "Held"] | None = None) -> list[dict[str, Any]]:
         """Every game the ledger knows, held against the disk."""
         return [{"rom_id": h.install.rom_id, "name": h.install.name, "state": h.state, "appid": self.shortcuts.appid(h.install.rom_id),
                  "bytes_done": h.seen.done_bytes, "bytes_total": h.seen.total_bytes, "missing": list(h.seen.missing),
@@ -47,7 +50,7 @@ class GameCommands:
                  "completed_at": h.install.completed_at}
                 for h in (self.held() if held is None else held).values()]
 
-    def storage(self, held: dict[int, "Held"] | None = None) -> dict:
+    def storage(self, held: dict[int, "Held"] | None = None) -> dict[str, Any]:
         """What the ROM folder's drive has: bytes taken by installed games, and the drive's free and total bytes."""
         used = sum(h.seen.done_bytes for h in (self.held() if held is None else held).values() if h.state == L.INSTALLED)
         # The folder is only made when the first game downloads; its drive is the nearest folder that exists.
@@ -60,7 +63,7 @@ class GameCommands:
             return {"used_bytes": used, "free_bytes": 0, "total_bytes": 0}
         return {"used_bytes": used, "free_bytes": usage.free, "total_bytes": usage.total}
 
-    def installed(self, held: dict[int, "Held"] | None = None) -> list[dict]:
+    def installed(self, held: dict[int, "Held"] | None = None) -> list[dict[str, Any]]:
         """Complete games that have a Steam shortcut, with what Steam's storage pages show for an installed app."""
         out = []
         for h in (self.held() if held is None else held).values():
@@ -102,27 +105,27 @@ class GameCommands:
         if changed:
             self._changed()
 
-    async def verify(self, rom_id: int) -> dict:
+    async def verify(self, rom_id: int) -> dict[str, Any]:
         """Asks RomM for the game's files again and holds the disk against them."""
         install = self.ledger.get(int(rom_id))
         if not install or not self.client:
             raise ValueError("Unknown game")
         if install.state not in L.IN_QUEUE:
             files = manifest(await self.client.rom(install.rom_id), self._target(install))
-            install = self.ledger.update(install.rom_id, files=files)
+            self.ledger.update(install.rom_id, files=files)
             complete = L.check(install, self._target(install).path).complete
             if complete != (install.state == L.INSTALLED):
                 self.ledger.update(install.rom_id, state=L.INSTALLED if complete else L.INCOMPLETE)
         self._changed()
         return self.state()
 
-    async def game_video(self, rom_id: int) -> dict:
+    async def game_video(self, rom_id: int) -> dict[str, Any]:
         """Direct stream addresses for the game's trailer ("" each when it has none or it cannot be resolved)."""
         game = self.library.games.get(int(rom_id))
         video_id = (game.raw.get("youtube_video_id") or "") if game else ""
         return {"rom_id": int(rom_id), **(await self.videos.resolve(video_id))}
 
-    async def cover_base64(self, rom_id: int) -> dict:
+    async def cover_base64(self, rom_id: int) -> dict[str, Any]:
         """The game's cover for Steam's custom artwork call (the Steam webview cannot fetch it cross-origin itself)."""
         game = self.library.games.get(int(rom_id))
         if not game or not self.client or not (game.cover_large or game.cover):
@@ -135,7 +138,7 @@ class GameCommands:
             return {"base64": "", "format": ""}
         return {"base64": base64.b64encode(data).decode(), "format": fmt}
 
-    async def download(self, rom_id: int, appid: int = 0) -> dict:
+    async def download(self, rom_id: int, appid: int = 0) -> dict[str, Any]:
         game = self.library.games.get(int(rom_id))
         if not game or not self.downloader:
             raise ValueError("Unknown game")
@@ -154,7 +157,7 @@ class GameCommands:
         self._changed()
         return self.state()
 
-    async def set_shortcut(self, rom_id: int, appid: int) -> dict:
+    async def set_shortcut(self, rom_id: int, appid: int) -> dict[str, Any]:
         """Records the game's Steam shortcut; appid 0 forgets one Steam no longer has."""
         game = self.library.games.get(int(rom_id))
         if not game:
@@ -165,16 +168,19 @@ class GameCommands:
         self._changed()
         return self.state()
 
-    async def remove(self, rom_id: int) -> dict:
+    async def remove(self, rom_id: int) -> dict[str, Any]:
         """Deletes the game's files and its record, whatever state it is in; the frontend removes the Steam shortcut
         with the appid returned in `removed`."""
         rom_id = int(rom_id)
         install, game = self.ledger.get(rom_id), self.library.games.get(rom_id)
-        if not install and not game:
+        if install:
+            target = self._target(install)
+        elif game:
+            target = self.location.target(game.slug, game.fs_name, game.single_file)
+        else:
             raise ValueError("Unknown game")
         if self.downloader:
             await self.downloader.drop(rom_id)
-        target = self._target(install) if install else self.location.target(game.slug, game.fs_name, game.single_file)
         for path in (target.path, target.path + ".part"):
             if os.path.isdir(path):
                 shutil.rmtree(path, ignore_errors=True)
@@ -191,7 +197,7 @@ class GameCommands:
     def _rom_id_for(self, appid: int) -> int | None:
         return self.shortcuts.rom_id(int(appid))
 
-    async def download_control(self, action: str, appid: int = 0, value: int = 0) -> dict:
+    async def download_control(self, action: str, appid: int = 0, value: int = 0) -> dict[str, Any]:
         """Steam's Downloads page buttons: pause/resume/cancel one of ours, pause_all/resume_all, move/move_to, clear."""
         d = self.downloader
         if not d:
@@ -221,12 +227,12 @@ class GameCommands:
         self._changed()
         return self.state()
 
-    async def cancel_download(self, rom_id: int) -> dict:
+    async def cancel_download(self, rom_id: int) -> dict[str, Any]:
         if self.downloader:
             await self.downloader.cancel(int(rom_id))
         return self.state()
 
-    async def set_roms_dir(self, path: str) -> dict:
+    async def set_roms_dir(self, path: str) -> dict[str, Any]:
         path = path.strip() or self.default_roms_dir
         self.location = InstallLocation(path, self.home)
         if self.downloader:

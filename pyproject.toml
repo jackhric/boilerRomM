@@ -5,7 +5,14 @@ requires-python = ">=3.11"
 dependencies = []
 
 [dependency-groups]
-dev = ["aiohttp", "pytest", "pytest-asyncio", "ruff"]
+dev = [
+    "aiohttp",
+    "certifi>=2026.10.23",
+    "pytest",
+    "pytest-asyncio",
+    "ruff",
+    "ty>=0.0.107",
+]
 
 [tool.uv]
 package = false
@@ -21,5 +28,27 @@ line-length = 140
 extend-exclude = ["py_modules/yt_dlp", "py_modules/yt_dlp-*", "decky.pyi"]
 
 [tool.ruff.lint]
-select = ["E", "F", "B"]
+select = ["E", "F", "B", "ANN"]
 ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["ANN"]
+
+[tool.ty.src]
+include = ["py_modules/boilerromm", "main.py"]
+
+[tool.ty.environment]
+python-version = "3.11"
+extra-paths = ["py_modules"]
+
+[tool.ty.rules]
+all = "error"
+# typing.override arrived in Python 3.12 and Decky Loader releases still ship 3.11.
+missing-override-decorator = "ignore"
+# `if not value` deliberately treats None and empty alike throughout.
+truthiness-test-of-none-union = "ignore"
+# Flags re-checks of state that another task changes across an await.
+redundant-condition-strict = "ignore"
+
+[tool.ty.terminal]
+error-on-warning = true
