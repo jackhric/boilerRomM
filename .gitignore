@@ -63,3 +63,7 @@ py_modules/yt_dlp-*.dist-info/
 # Reference captures (they show a signed-in Steam account)
 docs/reference/
 py_modules/.lock
+
+# Unblurred captures and the full-size video master stay local
+media/shots/raw/
+media/video/store-browse.mp4

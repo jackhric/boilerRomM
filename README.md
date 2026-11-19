@@ -1,37 +1,95 @@
-# boilerRomM
+<h1 align="center">boilerRomM</h1>
 
-A Decky Loader plugin that brings games from a [RomM](https://romm.app) server to a Steam device.
+<p align="center">
+  <b>Your RomM library as a store in Steam Game Mode. Browse, download and play, with the emulators set up for you.</b>
+</p>
 
-Browse your RomM library in a storefront inside Steam's Big Picture UI and download a game. boilerRomM installs
-and configures the emulators itself. An installed game is a Steam library entry: it launches in its emulator, shows in Settings > Storage,
-has Uninstall in its menu, and appears on Steam's Downloads page while it downloads. RomM stays the catalogue.
+<p align="center">
+  <a href="LICENSE"><img alt="License: AGPL-3.0" src="https://img.shields.io/badge/License-AGPL--3.0-blue"></a>
+  <a href="https://github.com/jackhric/boilerRomM/actions/workflows/ci.yml?query=branch%3Amain"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/jackhric/boilerRomM/ci.yml?branch=main&label=CI&logo=githubactions&logoColor=white"></a>
+  <img alt="Decky Loader plugin" src="https://img.shields.io/badge/Decky%20Loader-plugin-9C6AEC?logo=steam&logoColor=white">
+  <a href="https://romm.app"><img alt="Works with RomM" src="https://img.shields.io/badge/Works%20with-RomM-0AA5FF"></a>
+</p>
 
-## Setup
+<p align="center">
+  <a href="#features">Features</a> ·
+  <a href="#getting-started">Getting started</a> ·
+  <a href="#development">Development</a> ·
+  <a href="docs/architecture.md">Architecture</a>
+</p>
 
-1. Open the Quick Access panel, enter the RomM address and press **Connect** (RomM 5.4.1 or newer).
-2. Press **Pair this device**: a QR code and a short code appear. Scan the QR code with your phone, sign in to RomM
-   and approve; or open `<your RomM>/pair/device` in any browser and enter the short code. No password is ever
-   typed on the device.
-3. Sign in to SteamGridDB from the panel (it supplies the artwork), then press **Browse games**. Pick a game and
-   press **Download**. Progress shows on the game, in the panel and on Steam's Downloads page; a download cut off
-   by a restart continues by itself.
+<p align="center">
+  <img alt="The Discover page with a Super Metroid spotlight and a list of picks" src="media/readme/discover.jpg" width="49%">
+  <img alt="The Browse page: a grid of game covers" src="media/readme/browse.jpg" width="49%">
+</p>
+
+## Features
+
+- Browse your [RomM](https://romm.app) library like a store: Discover, Browse, Top rated, New, Consoles and search
+- Download a game and it is a normal Steam library entry, with progress on Steam's Downloads page
+- Installs and sets up nine emulators: RetroArch, PCSX2, Dolphin, Xenia, RPCS3, Cemu, shadPS4, Lichii and KytyPS5
+- Installs BIOS and firmware from your RomM server
+- Pairs with a QR code, so no password is typed on the device
+
+It ships no games, BIOS files or keys. RomM stays the catalogue.
+
+<p align="center">
+  <img alt="A game page with the Download button, reviews and a trailer" src="media/readme/game.jpg" width="49%">
+  <img alt="First-run setup: install all nine emulators" src="media/readme/emulators.jpg" width="49%">
+</p>
+
+## Getting started
+
+There is no release yet. You build it and deploy it.
+
+### Requirements
+
+- A Steam device in Game Mode with [Decky Loader](https://github.com/SteamDeckHomebrew/decky-loader).
+- A [RomM](https://romm.app) server, version 5.4 or newer.
+- [Decky Toolkit](https://github.com/jackhric/decky-toolkit), pnpm and [uv](https://docs.astral.sh/uv/).
+
+### 1. Build and deploy
+
+```sh
+pnpm install
+uv pip install --target py_modules --no-deps yt-dlp
+pnpm build
+npx decky-toolkit dev
+```
+
+`decky-toolkit dev` sends the plugin to a paired device. See the
+[Decky Toolkit README](https://github.com/jackhric/decky-toolkit#getting-started) to pair one.
+
+### 2. Set up
+
+Open Quick Access and choose **boilerRomM**. A full-screen setup opens the first time:
+
+1. Enter your RomM address.
+2. Pair: scan the QR code with your phone, sign in to RomM and approve. Or open `<your RomM>/pair/device` in a browser and enter the short code.
+3. Sign in to SteamGridDB for artwork.
+4. Install the emulators. Firmware found on your server is installed too.
+
+Then open the store, pick a game and press **Download**.
+
+Settings has pages for Emulators, Server, BIOS Files, Storage and About.
 
 ## Development
 
 ```sh
 pnpm install
-uv pip install --target py_modules --no-deps yt-dlp   # trailer previews (not kept in git)
-pnpm typecheck && pnpm test && pnpm build   # types, frontend tests, dist/index.js (Vite)
-uv run ruff check py_modules/boilerromm main.py tests && uv run pytest   # backend lint and tests
-npx decky-toolkit dev   # deploy to a paired device and live-sync changes
+uv pip install --target py_modules --no-deps yt-dlp
+pnpm typecheck && pnpm test && pnpm build
+uv run ruff check py_modules/boilerromm main.py tests && uv run ty check && uv run pytest
 ```
 
-See [docs/architecture.md](docs/architecture.md) for how it is put together, [src/steam/README.md](src/steam/README.md)
+See [docs/architecture.md](docs/architecture.md) for how it fits together, [src/steam/README.md](src/steam/README.md)
 for every hook into Steam, and [docs/romm-api.md](docs/romm-api.md) for the RomM endpoints used.
 
 ## License
 
-boilerRomM is free software under the GNU Affero General Public License, version 3 ([LICENSE](LICENSE)).
+[AGPL-3.0](LICENSE). It started from the [Decky plugin template](https://github.com/SteamDeckHomebrew/decky-plugin-template)
+(BSD 3-Clause, notice in [LICENSES/BSD-3-Clause.txt](LICENSES/BSD-3-Clause.txt)).
 
-It started from the [Decky plugin template](https://github.com/SteamDeckHomebrew/decky-plugin-template), which is
-BSD 3-Clause; that notice is kept in [LICENSES/BSD-3-Clause.txt](LICENSES/BSD-3-Clause.txt).
+<p align="center">
+  <a href="https://github.com/jackhric/decky-toolkit"><img alt="Created with Decky Toolkit" src="media/created-with-decky-toolkit.svg" width="276"></a>
+</p>
