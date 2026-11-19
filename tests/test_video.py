@@ -1,4 +1,3 @@
-import pytest
 
 from chickentender.video import VideoResolver, expires_at, pick_audio, pick_stream
 

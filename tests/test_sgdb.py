@@ -99,7 +99,7 @@ async def test_pick_assets_filters_and_choices():
     assert await c.pick_assets(42) == {"grid": "https://c/grid-best", "wide": "https://c/wide", "hero": "https://c/hero",
                                        "logo": "https://c/logo", "icon": "https://c/icon-256"}
     assert len(s.calls) == 5
-    for path, params, headers in s.calls:
+    for _path, params, headers in s.calls:
         assert headers["Authorization"] == f"Bearer {KEY}" and headers["User-Agent"] == "ChickenTender/1.0"
         assert params["types"] == "static" and params["nsfw"] == params["humor"] == params["epilepsy"] == "false"
         assert params["limit"] == "10"

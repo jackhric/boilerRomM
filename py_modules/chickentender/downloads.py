@@ -288,7 +288,7 @@ class Downloader:
         job.total_bytes = sum(e["size"] for e in listed)
         install = self.ledger.update(job.game.rom_id, files=listed, size_bytes=job.total_bytes)
         completed = 0
-        for f, entry in zip(files, listed):
+        for f, entry in zip(files, listed, strict=True):
             dest = L.file_path(install, target.path, entry)
             if os.path.isfile(dest) and os.path.getsize(dest) == entry["size"]:
                 completed += entry["size"]

@@ -1,7 +1,6 @@
 import json
 import logging
 
-import pytest
 
 from chickentender import signin as signin_mod
 from chickentender.app import App
