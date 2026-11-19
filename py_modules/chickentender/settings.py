@@ -1,5 +1,5 @@
 import json
-from dataclasses import asdict, dataclass, field, fields
+from dataclasses import asdict, dataclass, field, fields, replace
 
 from . import jsonfile
 
@@ -13,6 +13,13 @@ class Settings:
     scopes: list[str] = field(default_factory=list)
     roms_dir: str = ""
     sgdb_key: str = ""
+
+    def for_server(self, url: str) -> "Settings":
+        """These settings pointed at another RomM server: signed out, everything about the device kept."""
+        return replace(self, server_url=url, token="", device_id="", username="", scopes=[])
+
+    def signed_out(self) -> "Settings":
+        return self.for_server("")
 
     @property
     def paired(self) -> bool:

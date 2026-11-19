@@ -265,7 +265,7 @@ class App:
         await self._probe_server(emit=False)
         if self.settings.server_url != url:
             await self.prefetch.stop()
-            self.settings = Settings(server_url=url, roms_dir=self.settings.roms_dir, sgdb_key=self.settings.sgdb_key)
+            self.settings = self.settings.for_server(url)
             self.store.save(self.settings)
             self.library = Library()
         self._changed()
@@ -340,7 +340,7 @@ class App:
         if self.client:
             await self.client.close()
             self.client = None
-        self.settings = Settings(roms_dir=self.settings.roms_dir, sgdb_key=self.settings.sgdb_key)
+        self.settings = self.settings.signed_out()
         self.store.save(self.settings)
         self.server = {"version": "", "error": ""}
         self.library = Library()

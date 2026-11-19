@@ -26,3 +26,24 @@ def test_url_and_version_helpers():
     assert parse_version("5.4.1-rc1") == (5, 4, 1)
     assert RommError(400, "slow_down").code == "slow_down"
     assert RommError(422, [{"msg": "x"}]).code == ""
+
+
+def test_signing_out_keeps_every_setting_that_is_about_the_device(tmp_path):
+    from dataclasses import fields
+
+    from chickentender.settings import Settings, SettingsStore
+
+    account = {"server_url", "token", "device_id", "username", "scopes"}
+    full = Settings(**{f.name: (["x"] if f.name == "scopes" else f"{f.name}-value") for f in fields(Settings)})
+    out = full.signed_out()
+    assert not out.paired
+    for f in fields(Settings):
+        assert getattr(out, f.name) == (type(getattr(Settings(), f.name))() if f.name in account else getattr(full, f.name)), f.name
+    moved = full.for_server("https://other")
+    assert moved.server_url == "https://other" and moved.token == "" and moved.sgdb_key == "sgdb_key-value"
+
+    store = SettingsStore(str(tmp_path / "s" / "settings.json"))
+    store.save(full)
+    assert store.load() == full
+    assert oct((tmp_path / "s" / "settings.json").stat().st_mode & 0o777) == "0o600"
+    assert [n for n in (tmp_path / "s").iterdir() if n.name.startswith(".")] == []
