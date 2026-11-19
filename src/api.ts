@@ -131,6 +131,8 @@ export interface BiosFolder {
   /** Names of the recognised files in the folder. */
   found: string[];
   ready: boolean;
+  /** The files to put on the RomM server for it, as they are usually named. */
+  expects: string;
 }
 
 /** The outcome of asking the RomM server now. */
@@ -167,7 +169,16 @@ export interface EmulatorInfo {
   /** One entry per platform whose folder the user fills with firmware or keys; empty when it needs none. */
   bios: BiosFolder[];
   /** "queued" is waiting its turn behind another install. */
-  busy: "" | "queued" | "installing" | "uninstalling" | "resetting" | "fetching";
+  /** The firmware is where the emulator uses it (RPCS3 unpacks its own; for the rest, the files being there). */
+  firmware_installed: boolean;
+  /** What is installed, e.g. "ps2-0230a-20080220.bin"; "" when nothing is. */
+  firmware_label: string;
+  /** The kind of firmware file it takes, e.g. ".bin". */
+  accepts: string;
+  /** It takes a set of files, not one. */
+  firmware_set: boolean;
+  year: number;
+  busy: "" | "queued" | "installing" | "firmware" | "uninstalling" | "resetting" | "fetching" | "removing";
   error: string;
   /** Bytes of the download in flight and its size (0 when the host does not say); null when nothing is downloading. */
   progress: [done: number, total: number] | null;
@@ -247,8 +258,13 @@ export const uninstallEmulator = callable<[id: string], State>("emulator_uninsta
 export const resetEmulator = callable<[id: string], State>("emulator_reset");
 /** Downloads the firmware RomM holds for the emulator's platforms; only files the emulator recognises are kept. */
 /** Looks at the BIOS folders again and sends the state. */
-export const rescanBios = callable<[], State>("rescan_bios");
-export const biosFromRomm = callable<[id: string], State>("emulator_bios_from_romm");
+/** A firmware file on the RomM server that an emulator could install. */
+export interface BiosFile { id: number; name: string; size: number; platform: string; recommended: boolean }
+/** By emulator id; an emulator with no compatible file on the server has an empty list. */
+export const biosAvailable = callable<[], Record<string, BiosFile[]>>("bios_available");
+/** No ids: the recommended file, or the whole set for an emulator that takes one. */
+export const installBios = callable<[id: string, firmware_ids: number[]], State>("emulator_bios_install");
+export const uninstallBios = callable<[id: string], State>("emulator_bios_uninstall");
 export const setRomsDir = callable<[path: string], State>("set_roms_dir");
 
 const STATE_EVENT = "boilerromm_state";

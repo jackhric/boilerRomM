@@ -59,7 +59,11 @@ class EmulatorCommands:
                 emulator.prepare()
             finally:
                 self._emulator_progress.pop(emulator.id, None)
-            await self._auto_bios(emulator)
+            if emulator.bios_platforms():
+                # A step of its own on screen: it can take minutes, and is not the emulator downloading.
+                self._emulator_busy[emulator.id] = "firmware"
+                self._changed()
+                await self._auto_bios(emulator)
         return await self._emulator_task(emulator_id, "installing", work)
 
     async def emulators_install_all(self) -> dict:
@@ -97,36 +101,77 @@ class EmulatorCommands:
             emulator.reset_config()
         return await self._emulator_task(emulator_id, "resetting", work)
 
-    async def rescan_bios(self) -> dict:
-        self._changed()
-        return self.state()
-
-    async def _fetch_bios(self, emulator: emulators.Emulator) -> tuple[int, int]:
-        """Downloads the firmware RomM holds for the emulator's platforms: (kept, listed). Each file goes through the
-        emulator's own check, so only what it recognises is kept, and a file that fails the check is not."""
+    async def _romm_firmware(self, wanted: list[emulators.Emulator]) -> dict[str, tuple[list[dict], int]]:
+        """What RomM holds for each emulator: (the files it can use, how many RomM listed for its platforms)."""
         if not self.client or not self.settings.paired:
             raise RuntimeError("Connect to RomM first")
         ids = {p["fs_slug"]: p["id"] for p in await self.client.platforms()}
-        kept, listed = 0, 0
-        with tempfile.TemporaryDirectory(dir=self.data_dir if os.path.isdir(self.data_dir) else None) as scratch:
+        listed: dict[str, list[dict]] = {}
+        out = {}
+        for emulator in wanted:
+            usable, count = [], 0
             for platform in emulator.bios_platforms():
                 if platform not in ids:
                     continue
-                for entry in await self.client.firmware(ids[platform]):
-                    listed += 1
-                    path = os.path.join(scratch, os.path.basename(entry["file_name"]))
-                    await self.client.fetch_firmware(entry["id"], entry["file_name"], path)
-                    if emulator.add_firmware(path):
-                        kept += 1
-                    os.unlink(path)
+                if platform not in listed:
+                    listed[platform] = await self.client.firmware(ids[platform])
+                count += len(listed[platform])
+                usable += [{**e, "platform": platform} for e in listed[platform] if not e.get("missing_from_fs") and emulator.compatible(e)]
+            out[emulator.id] = (usable, count)
+        return out
+
+    async def bios_available(self) -> dict:
+        """The firmware files on the RomM server each emulator could install, for the BIOS page's menus."""
+        wanted = [e for e in self.emulators.values() if e.bios_platforms()]
+        try:
+            found = await self._romm_firmware(wanted)
+        except Exception as e:
+            self.log.warning("firmware on RomM was not listed: %s", e)
+            return {e.id: [] for e in wanted}
+        out = {}
+        for emulator in wanted:
+            usable = found[emulator.id][0]
+            pick = emulator.recommended(usable)
+            out[emulator.id] = [{"id": e["id"], "name": e["file_name"], "size": e.get("file_size_bytes") or 0, "platform": e["platform"],
+                                 "recommended": not emulator.firmware_set and pick is not None and e["id"] == pick["id"]} for e in usable]
+            # The suggestion leads the menu; a long list of BIOS versions would otherwise bury it.
+            out[emulator.id].sort(key=lambda f: not f["recommended"])
+        return out
+
+    async def _fetch_bios(self, emulator: emulators.Emulator, only: list[int] | None = None) -> tuple[int, int]:
+        """Downloads firmware from RomM for the emulator: (kept, listed). `only` names the files by RomM's id; without
+        it, a set is fetched whole and otherwise the one recommended file. Each download goes through the emulator's
+        own check, so a file that turns out not to be what it looked like is not kept."""
+        usable, listed = (await self._romm_firmware([emulator]))[emulator.id]
+        if only:
+            chosen = [e for e in usable if e["id"] in only]
+        elif emulator.firmware_set:
+            chosen = usable
+        else:
+            chosen = [e for e in [emulator.recommended(usable)] if e]
+        kept = 0
+        with tempfile.TemporaryDirectory(dir=self.data_dir if os.path.isdir(self.data_dir) else None) as scratch:
+            for entry in chosen:
+                path = os.path.join(scratch, os.path.basename(entry["file_name"]))
+                await self.client.fetch_firmware(entry["id"], entry["file_name"], path)
+                if emulator.add_firmware(path):
+                    kept += 1
+                os.unlink(path)
         return kept, listed
 
-    async def emulator_bios_from_romm(self, emulator_id: str) -> dict:
+    async def emulator_bios_install(self, emulator_id: str, firmware_ids: list[int] | None = None) -> dict:
         async def work(emulator: emulators.Emulator) -> None:
-            kept, listed = await self._fetch_bios(emulator)
+            kept, listed = await self._fetch_bios(emulator, [int(i) for i in firmware_ids or []])
             if not kept:
                 raise RuntimeError("RomM has no firmware for this emulator" if not listed else "None of RomM's files are ones it can use")
+            emulator.prepare()
+            await emulator.install_firmware()
         return await self._emulator_task(emulator_id, "fetching", work)
+
+    async def emulator_bios_uninstall(self, emulator_id: str) -> dict:
+        async def work(emulator: emulators.Emulator) -> None:
+            emulator.remove_firmware()
+        return await self._emulator_task(emulator_id, "removing", work)
 
     def _bios_missing(self, emulator: emulators.Emulator, slug: str = "") -> bool:
         """Whether the emulator lacks firmware it cannot run without: for `slug`'s games, or for any of its platforms."""
@@ -136,15 +181,17 @@ class EmulatorCommands:
     async def _auto_bios(self, emulator: emulators.Emulator, slug: str = "") -> None:
         """Gets missing firmware from RomM without being asked. Quiet: RomM not having it is not an error here, the
         BIOS page and the launch check say what is missing."""
-        if emulator.id in self._bios_fetching or not self.settings.paired or not self._bios_missing(emulator, slug):
+        if emulator.id in self._bios_fetching:
             return
         self._bios_fetching.add(emulator.id)
         try:
-            kept, _ = await self._fetch_bios(emulator)
-            if kept:
-                self.log.info("%s: %d firmware files from RomM", emulator.name, kept)
+            if self.settings.paired and self._bios_missing(emulator, slug):
+                kept, _ = await self._fetch_bios(emulator)
+                if kept:
+                    self.log.info("%s: %d firmware files from RomM", emulator.name, kept)
+            await emulator.install_firmware()
         except Exception as e:
-            self.log.warning("firmware for %s was not fetched: %s", emulator.name, e)
+            self.log.warning("firmware for %s was not set up: %s", emulator.name, e)
         finally:
             self._bios_fetching.discard(emulator.id)
         self._changed()
@@ -206,6 +253,8 @@ class EmulatorCommands:
             return f"{emulator.name} is not installed. Install it in Settings, under Emulators."
         if self._bios_missing(emulator, slug):
             return f"{emulator.name} needs {emulator.requires}, and RomM did not have one. Add it in Settings, under BIOS."
+        if slug in emulator.bios_platforms() and not emulator.firmware_installed:
+            return f"{emulator.name} could not install its firmware. Try again in Settings, under BIOS."
         return ""
 
     async def play_target(self, rom_id: int) -> dict:

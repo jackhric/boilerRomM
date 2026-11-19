@@ -80,6 +80,10 @@ def _update_json(path: str, values: dict[str, dict]) -> None:
 
 
 class ShadPs4(Emulator):
+    year = 2013
+    accepts = ".sprx"
+    firmware_set = True
+
     id = "shadps4"
     name = "shadPS4"
     system = "PlayStation 4"
@@ -147,6 +151,20 @@ class ShadPs4(Emulator):
 
     def bios_platforms(self) -> tuple[str, ...]:
         return ("ps4",)
+
+    def compatible(self, entry: dict) -> bool:
+        return str(entry.get("file_name", "")).lower().endswith(".sprx")
+
+    def firmware_label(self) -> str:
+        found = self.firmware_found()
+        return found[0].name if len(found) == 1 else f"{len(found)} modules" if found else ""
+
+    def remove_firmware(self) -> None:
+        for f in self.firmware_found():
+            os.unlink(os.path.join(self.layout.bios("ps4"), f.name))
+
+    def expected_files(self, platform: str) -> str:
+        return "libSceNgs2.sprx, libSceFont.sprx, …"
 
     def firmware_ready(self) -> bool:
         return bool(self.firmware_found())

@@ -1,7 +1,7 @@
 // First-run setup: eight screens, one thing on each. The screen shown follows from what is already done, so leaving
 // halfway and coming back resumes at the first step still to do.
 import { Focusable, Navigation, SteamSpinner, TextField } from "@decky/ui";
-import { CSSProperties, ReactNode, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { CSSProperties, ReactNode, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { FaDownload } from "react-icons/fa";
 import {
   cancelSgdbSignin, EmulatorInfo, finishSetup, installAllEmulators, refreshLibrary, setServer, setSgdbKey, SGDB_SIGN_IN, startPairing,
@@ -12,16 +12,19 @@ import { useTransparentHeader } from "../../steam";
 import { useBackendState } from "../../state";
 import { emulatorLogo } from "../emulatorLogos";
 import { FOOTER } from "../kit";
+import { backdropArt, RotatingBackdrop } from "../kit/backdrop";
 import { Guard } from "../kit/guard";
 import { QrCode } from "../kit/qr";
 import { Wordmark } from "../kit/wordmark";
 import { BigCheck, Busy, centred, Check, column, Line, PRIMARY, SetupButton, StatusRow, Steps, T } from "../kit/big";
 
-type Step = "welcome" | "server" | "pair" | "verify" | "artwork" | "emulators" | "installing" | "ready";
-const ORDER: Step[] = ["welcome", "server", "pair", "verify", "artwork", "emulators", "installing", "ready"];
+type Step = "welcome" | "server" | "pair" | "verify" | "artwork" | "emulators" | "installing" | "firmware" | "ready";
+const ORDER: Step[] = ["welcome", "server", "pair", "verify", "artwork", "emulators", "installing", "firmware", "ready"];
 
 const serverFound = (s: State) => !!s.server.version && !s.server.error;
-const working = (e: EmulatorInfo) => e.busy === "queued" || e.busy === "installing";
+const working = (e: EmulatorInfo) => e.busy === "queued" || e.busy === "installing" || e.busy === "firmware";
+/** Installed, but its games cannot start until firmware it needs is added (or, for RPCS3, has been unpacked). */
+const lacksFirmware = (e: EmulatorInfo) => e.installed && e.bios.length > 0 && (!e.firmware || !e.firmware_installed);
 const host = (url: string) => url.replace(/^https?:\/\//, "").replace(/[/?].*$/, "");
 
 /** Where setup stands: the first step not yet done. */
@@ -240,17 +243,23 @@ function Emulators({ state }: { state: State }) {
   );
 }
 
+const BACKDROP_MS = 10_000;
 const megabytes = (bytes: number) => Math.round(bytes / (1 << 20));
 
 function installText(e: EmulatorInfo): { text: string; color: string } {
-  if (e.installed && !working(e)) return { text: "Installed", color: "#9a9fa5" };
+  if (e.busy === "firmware") return { text: "Installing firmware…", color: "#f1f2f3" };
+  if (e.installed && !working(e)) {
+    // Only said of an emulator that cannot start a game without it.
+    const firmware = !e.bios.length || e.firmware && !e.bios.every((b) => b.ready) ? "" : e.firmware_installed ? " · firmware installed" : e.firmware ? " · firmware did not install" : " · no firmware on your RomM server";
+    return { text: `Installed${firmware}`, color: "#9a9fa5" };
+  }
   if (e.busy === "installing") {
     const [done, total] = e.progress ?? [0, 0];
     return { text: !done ? "Installing…" : total ? `Downloading · ${megabytes(done)} of ${megabytes(total)} MB` : `Downloading · ${megabytes(done)} MB`, color: "#f1f2f3" };
   }
-  if (e.busy === "queued") return { text: "Waiting", color: "#636b74" };
+  if (e.busy === "queued") return { text: "Waiting…", color: "#636b74" };
   if (e.error) return { text: "Didn't install. You can try again in Settings.", color: "#d6d9dc" };
-  return { text: "Waiting", color: "#636b74" };
+  return { text: "Waiting…", color: "#636b74" };
 }
 
 function Installing({ state, next }: { state: State; next(): void }) {
@@ -258,29 +267,62 @@ function Installing({ state, next }: { state: State; next(): void }) {
   const finished = !all.some(working);
   const installed = all.filter((e) => e.installed && !working(e)).length;
   const settled = all.filter((e) => !working(e) && (e.installed || e.error)).length;
-  const current = all.find((e) => e.busy === "installing");
+  const current = all.find((e) => e.busy === "installing" || e.busy === "firmware");
   const [done, total] = current?.progress ?? [0, 0];
+  // A list too long for the screen scrolls by itself to the row being worked on, and fades out where more follows.
+  const list = useRef<HTMLDivElement>(null);
+  const [more, setMore] = useState({ above: false, below: false });
+  const measure = () => {
+    const el = list.current;
+    if (!el) return;
+    const next = { above: el.scrollTop > 1, below: el.scrollTop + el.clientHeight < el.scrollHeight - 1 };
+    setMore((was) => (was.above === next.above && was.below === next.below ? was : next));
+  };
+  const follow = () => {
+    const el = list.current;
+    const row = el?.querySelector<HTMLElement>("[data-active]");
+    if (el && row) el.scrollTo({ top: row.offsetTop - el.offsetTop - (el.clientHeight - row.offsetHeight) / 2, behavior: "smooth" });
+    measure();
+  };
+  useEffect(follow, [current?.id, all.length]);
+  useEffect(() => {
+    const view = list.current?.ownerDocument.defaultView;
+    view?.addEventListener("resize", follow);
+    return () => view?.removeEventListener("resize", follow);
+  }, []);
+  useEffect(() => {
+    if (finished) list.current?.parentElement?.querySelector<HTMLElement>(`.${PRIMARY}`)?.focus();
+  }, [finished]);
+  const fade = `linear-gradient(to bottom, ${more.above ? "transparent, #000 56px" : "#000 0"}, ${more.below ? "#000 calc(100% - 96px), transparent" : "#000 100%"})`;
   const fraction = Math.min(1, (settled + (total ? done / total : 0)) / Math.max(1, all.length));
   const eyebrow = finished
     ? installed === all.length ? `All ${all.length} emulators installed` : `${installed} of ${all.length} emulators installed`
+    : current?.busy === "firmware" ? `Installing automatically detected firmware for ${current.name} · this may take a few minutes`
     : current ? `${done ? "Downloading" : "Installing"} ${current.name}${total ? ` · ${megabytes(done)} MB of ${megabytes(total)} MB` : ""}` : "Starting";
+  const art = useMemo(() => state.library.games.map(backdropArt).filter(Boolean), [state.library.games]);
   return (
-    <div style={{ ...column, height: "100%", paddingTop: 26, paddingBottom: 32, boxSizing: "border-box" }}>
+    <div style={{ ...column, position: "relative", isolation: "isolate", height: "100%", paddingTop: 26, paddingBottom: 32, boxSizing: "border-box" }}>
+      {/* Past the page's own padding, so it fills the screen behind everything. */}
+      <div style={{ position: "absolute", top: -48, bottom: 0, left: -72, right: -72, zIndex: -1 }}>
+        <RotatingBackdrop sources={art} everyMs={BACKDROP_MS} />
+      </div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", minHeight: 52 }}>
         <div style={T.page}>{finished ? "Emulators installed" : "Installing emulators"}</div>
         {finished && <SetupButton primary onClick={next}>Next</SetupButton>}
       </div>
-      <div style={{ display: "grid", gap: 2, marginTop: 16 }}>
+      {/* Holds the focus while there is no button: otherwise the d-pad wanders into Steam's own header. */}
+      <Focusable ref={list} className={finished ? undefined : PRIMARY} noFocusRing onActivate={() => {}} onScroll={measure} style={{ display: "grid", gap: 2, alignContent: "start", gridAutoRows: "max-content", marginTop: 16, flex: "1 1 0", minHeight: 0, overflowY: "auto", scrollbarWidth: "none", maskImage: fade, WebkitMaskImage: fade }}>
         {all.map((e) => {
           const status = installText(e);
           return (
             <StatusRow
               key={e.id}
+              active={e.id === current?.id}
               minHeight={0}
-              padding="7px 18px"
+              padding="4px 18px"
               left={
                 <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-                  <img src={emulatorLogo(e.id)} alt="" style={{ width: 40, height: 40, objectFit: "contain", opacity: e.installed && !working(e) ? 1 : 0.45 }} />
+                  <img src={emulatorLogo(e.id)} alt="" style={{ width: 36, height: 36, objectFit: "contain", opacity: e.installed && !working(e) ? 1 : 0.45 }} />
                   <div>
                     <div style={{ fontSize: 18, lineHeight: 1.25, color: "#f1f2f3" }}>{e.name}</div>
                     <div style={{ fontSize: 14, color: "#9a9fa5" }}>{e.system}</div>
@@ -291,15 +333,58 @@ function Installing({ state, next }: { state: State; next(): void }) {
             />
           );
         })}
-      </div>
-      <div style={{ marginTop: "auto" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 20, marginBottom: 12 }}>
-          <span style={{ ...T.eyebrow, color: "#d6d9dc" }}>{eyebrow}</span>
-          <span style={T.eyebrow}>{installed} of {all.length} installed</span>
+      </Focusable>
+      <div style={{ flex: "0 0 auto", paddingTop: 14 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 20, marginBottom: 12 }}>
+          <span style={{ ...T.eyebrow, color: "#d6d9dc", minWidth: 0 }}>{eyebrow}</span>
+          <span style={{ ...T.eyebrow, flex: "0 0 auto", whiteSpace: "nowrap" }}>{installed} of {all.length} installed</span>
         </div>
         <div style={{ height: 8, background: "rgba(255,255,255,.1)", borderRadius: 1, overflow: "hidden" }}>
           <div style={{ height: "100%", width: `${fraction * 100}%`, background: "#1a9fff", transition: "width .3s linear" }} />
         </div>
+      </div>
+    </div>
+  );
+}
+
+/** Shown only when an installed emulator came out of the firmware step without what it needs. */
+function MissingFirmware({ state, next }: { state: State; next(): void }) {
+  const missing = state.emulators.filter(lacksFirmware);
+  return (
+    <div style={{ ...column, height: "100%", paddingTop: 26, paddingBottom: 32, boxSizing: "border-box" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 24, minHeight: 52 }}>
+        <div style={T.page}>{missing.length === 1 ? "One emulator still needs firmware" : `${missing.length} emulators still need firmware`}</div>
+        <SetupButton primary onClick={next}>Continue</SetupButton>
+      </div>
+      <div style={{ ...T.body, marginTop: 10, maxWidth: 1000 }}>
+        Not found on your RomM server. Add them there, then use Get from RomM in Settings, under BIOS.
+      </div>
+      <div style={{ display: "grid", gap: 2, gridAutoRows: "max-content", marginTop: 22, overflowY: "auto", scrollbarWidth: "none", minHeight: 0 }}>
+        {missing.map((e) => {
+          const lacking = e.bios.filter((b) => !b.ready);
+          return (
+            <StatusRow
+              key={e.id}
+              minHeight={0}
+              padding="10px 18px"
+              left={
+                <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                  <img src={emulatorLogo(e.id)} alt="" style={{ width: 40, height: 40, objectFit: "contain" }} />
+                  <div>
+                    <div style={{ fontSize: 18, lineHeight: 1.25, color: "#f1f2f3" }}>{e.name}</div>
+                    <div style={{ fontSize: 14, color: "#9a9fa5" }}>{e.system}</div>
+                  </div>
+                </div>
+              }
+              right={
+                <div style={{ textAlign: "right" }}>
+                  <div style={{ fontSize: 18, lineHeight: 1.25, color: "#f1f2f3" }}>{lacking.length ? `Needs ${e.requires}` : "Firmware did not install"}</div>
+                  <div style={{ fontSize: 14, color: "#9a9fa5" }}>{(lacking.length ? lacking : e.bios).map((b) => b.expects).join("  ·  ")}</div>
+                </div>
+              }
+            />
+          );
+        })}
       </div>
     </div>
   );
@@ -352,7 +437,8 @@ function Setup({ state }: { state: State }) {
   else if (step === "verify") screen = <Verify state={state} next={() => go(state.sgdb.configured ? "emulators" : "artwork")} />;
   else if (step === "artwork") screen = <Artwork state={state} />;
   else if (step === "emulators") screen = <Emulators state={state} />;
-  else if (step === "installing") screen = <Installing state={state} next={() => go("ready")} />;
+  else if (step === "installing") screen = <Installing state={state} next={() => go(state.emulators.some(lacksFirmware) ? "firmware" : "ready")} />;
+  else if (step === "firmware") screen = <MissingFirmware state={state} next={() => go("ready")} />;
   else screen = <Ready state={state} />;
 
   return (

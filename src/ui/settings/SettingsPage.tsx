@@ -18,7 +18,7 @@ function Settings() {
       pages={settingsPages([
         { title: "Emulators", icon: <FaGamepad />, content: <Emulators state={state} />, identifier: "emulators" },
         { title: "Server", icon: <FaServer />, content: <Server state={state} />, identifier: "server" },
-        { title: "BIOS", icon: <FaMicrochip />, content: <Bios state={state} />, identifier: "bios" },
+        { title: "BIOS Files", icon: <FaMicrochip />, content: <Bios state={state} />, identifier: "bios" },
         { title: "Storage", icon: <FaHdd />, content: <Storage state={state} />, identifier: "storage" },
       ], [
         { title: "About", icon: <FaInfoCircle />, content: <About state={state} />, identifier: "about" },

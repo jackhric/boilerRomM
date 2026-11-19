@@ -156,6 +156,9 @@ async def _fetch(session, url: str) -> bytes:
 
 
 class RetroArch(Emulator):
+    year = 1977
+    firmware_set = True
+
     id = "retroarch"
     name = "RetroArch"
     system = "Classic consoles"

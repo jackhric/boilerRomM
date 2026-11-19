@@ -1,6 +1,7 @@
 """RPCS3 (PlayStation 3), run from the project's own AppImage."""
 import json
 import os
+import re
 import shutil
 
 from ..games.install import Target, launch_file
@@ -16,6 +17,7 @@ TAG = "build-0ebb63697666a54b44a4de69ef222c4ecee0001a"
 # is missing, firmware install included.
 DEVICES = ("dev_hdd0", "dev_hdd1", "dev_flash", "dev_flash2", "dev_flash3", "dev_bdvd", "games")
 USER = "00000001"
+FIRMWARE_TIMEOUT_S = 20 * 60
 PUP_NAME = "PS3UPDAT.PUP"
 PUP_MAGIC = b"SCEUF\0\0\0"
 # Where RPCS3 looks for the executable of a game folder (Emulator::GetElfPathFromDir).
@@ -72,6 +74,9 @@ def _link(link: str, target: str) -> None:
 
 
 class Rpcs3(Emulator):
+    year = 2006
+    accepts = ".PUP"
+
     id = "rpcs3"
     name = "RPCS3"
     system = "PlayStation 3"
@@ -115,6 +120,22 @@ class Rpcs3(Emulator):
             return []
         return [Firmware("ps3", name, "") for name in names if _is_pup(os.path.join(folder, name))]
 
+    def expected_files(self, platform: str) -> str:
+        return PUP_NAME
+
+    def compatible(self, entry: dict) -> bool:
+        return str(entry.get("file_name", "")).lower().endswith(".pup")
+
+    def firmware_label(self) -> str:
+        version = self.firmware_version
+        return f"{PUP_NAME} ({version})" if version else PUP_NAME if self.firmware_found() else ""
+
+    def remove_firmware(self) -> None:
+        for f in self.firmware_found():
+            os.unlink(os.path.join(self.layout.bios("ps3"), f.name))
+        shutil.rmtree(self.device("dev_flash"), ignore_errors=True)
+        os.makedirs(self.device("dev_flash"), exist_ok=True)
+
     @property
     def firmware_installed(self) -> bool:
         return os.path.isfile(self.firmware_version_file)
@@ -135,6 +156,27 @@ class Rpcs3(Emulator):
         os.makedirs(folder, exist_ok=True)
         shutil.copyfile(path, os.path.join(folder, PUP_NAME))
         return Firmware("ps3", PUP_NAME, "")
+
+    async def install_firmware(self) -> None:
+        """Unpacks the PUP into dev_flash with RPCS3 itself, which needs no window for it."""
+        found = self.firmware_found()
+        if self.firmware_installed or not found or not self.version:
+            return
+        self.prepare()
+        await self.run("--headless", "--installfw", os.path.join(self.layout.bios("ps3"), found[0].name), timeout=FIRMWARE_TIMEOUT_S)
+        # RPCS3 ends with the same status whether it worked or not.
+        if not self.firmware_installed:
+            raise RuntimeError("RPCS3 could not install the PS3 firmware")
+
+    @property
+    def firmware_version(self) -> str:
+        """The installed firmware, e.g. "4.93"; "" when none is."""
+        try:
+            with open(self.firmware_version_file, encoding="utf-8") as f:
+                release = re.search(r"release:(\d+)\.(\d\d)", f.read())
+        except OSError:
+            return ""
+        return f"{int(release.group(1))}.{release.group(2)}" if release else ""
 
     # Config
     def configure(self) -> None:

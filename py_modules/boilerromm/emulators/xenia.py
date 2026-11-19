@@ -65,6 +65,8 @@ def _toml(value) -> str:
 
 
 class Xenia(Emulator):
+    year = 2005
+
     id = "xenia"
     name = "Xenia Canary"
     system = "Xbox 360"

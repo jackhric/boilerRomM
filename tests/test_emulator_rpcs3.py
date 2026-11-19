@@ -171,3 +171,40 @@ def test_launch_file_is_the_game_folder_an_iso_or_the_file_itself(rpcs3, tmp_pat
     write(image / "game.dkey", b"k")
     write(image / "game.iso", b"x" * 100)
     assert rpcs3.launch_file(Target(str(image), True)) == str(image / "game.iso")
+
+
+async def test_the_firmware_is_unpacked_by_rpcs3_itself_and_checked_on_disk(tmp_path):
+    rpcs3 = Rpcs3(Layout(str(tmp_path)))
+    os.makedirs(rpcs3.home)
+    for path in (rpcs3.executable, rpcs3.version_file):
+        with open(path, "w") as f:
+            f.write("1")
+    ran = []
+
+    async def run(*args, timeout):
+        ran.append(args)
+        return 0
+
+    rpcs3.run = run
+    await rpcs3.install_firmware()
+    assert ran == []  # no PUP, nothing to install
+
+    pup = tmp_path / "PS3UPDAT.PUP"
+    pup.write_bytes(PUP_MAGIC + b"x")
+    rpcs3.add_firmware(str(pup))
+    with pytest.raises(RuntimeError, match="could not install"):
+        await rpcs3.install_firmware()
+    assert ran == [("--headless", "--installfw", os.path.join(rpcs3.layout.bios("ps3"), "PS3UPDAT.PUP"))]
+
+    async def installs(*args, timeout):
+        os.makedirs(os.path.dirname(rpcs3.firmware_version_file))
+        with open(rpcs3.firmware_version_file, "w") as f:
+            f.write("release:04.9300:\nbuild:1,2\n")
+        return 0
+
+    rpcs3.run = installs
+    await rpcs3.install_firmware()
+    assert rpcs3.firmware_installed and rpcs3.firmware_version == "4.93"
+    rpcs3.run = run
+    await rpcs3.install_firmware()
+    assert len(ran) == 1  # installed: not run again

@@ -42,6 +42,8 @@ def _game_in(folder: str) -> str:
 
 
 class Kyty(Emulator):
+    year = 2020
+
     id = "kyty"
     name = "KytyPS5"
     system = "PlayStation 5"

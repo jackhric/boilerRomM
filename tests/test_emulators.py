@@ -170,7 +170,8 @@ async def test_ready_needs_the_build_and_one_known_bios(pcsx2, monkeypatch):
     monkeypatch.setattr(Pcsx2, "firmware", (*Pcsx2.firmware[:1], type(Pcsx2.firmware[0])("ps2", "known.bin", hashlib.md5(content).hexdigest())))
     assert pcsx2.status() == {"id": "pcsx2", "name": "PCSX2", "system": "PlayStation 2", "platforms": ["ps2"], "installed": False, "version": "", "version_name": "",
                               "firmware": False, "requires": "a BIOS", "ready": False, "configured": False,
-                              "bios": [{"platform": "ps2", "folder": pcsx2.layout.bios("ps2"), "found": [], "ready": False}]}
+                              "bios": [{"platform": "ps2", "folder": pcsx2.layout.bios("ps2"), "found": [], "ready": False, "expects": "scph39001.bin, ps2-0230a-20080220.bin, …"}],
+                              "firmware_installed": False, "year": 2000, "accepts": ".bin", "firmware_set": False, "firmware_label": ""}
     bios_file(pcsx2.layout.bios("ps2"), b"not a bios")
     assert not pcsx2.firmware_ready()
     bios_file(pcsx2.layout.bios("ps2"), content)
@@ -230,7 +231,8 @@ async def test_the_app_installs_uninstalls_and_resets_an_emulator_and_reports_fa
               data_dir=str(tmp_path / "data"), release_session_factory=lambda: sessions.pop(0))
     assert pcsx2_of(app.state()) == {"id": "pcsx2", "name": "PCSX2", "system": "PlayStation 2", "platforms": ["ps2"], "installed": False, "version": "", "version_name": "",
                                            "firmware": False, "requires": "a BIOS", "ready": False, "configured": False,
-                                     "bios": [{"platform": "ps2", "folder": app.emulators["pcsx2"].layout.bios("ps2"), "found": [], "ready": False}],
+                                     "bios": [{"platform": "ps2", "folder": app.emulators["pcsx2"].layout.bios("ps2"), "found": [], "ready": False, "expects": "scph39001.bin, ps2-0230a-20080220.bin, …"}],
+                                     "firmware_installed": False, "year": 2000, "accepts": ".bin", "firmware_set": False, "firmware_label": "",
                                      "busy": "", "error": "", "progress": None}
 
     failed = pcsx2_of(await app.emulator_install("pcsx2"))

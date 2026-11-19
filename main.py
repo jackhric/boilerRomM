@@ -90,17 +90,20 @@ class Plugin:
     async def finish_setup(self) -> dict:
         return await self.app.finish_setup()
 
+    async def bios_available(self) -> dict:
+        return await self.app.bios_available()
+
+    async def emulator_bios_install(self, emulator_id: str, firmware_ids: list | None = None) -> dict:
+        return await self.app.emulator_bios_install(emulator_id, firmware_ids)
+
+    async def emulator_bios_uninstall(self, emulator_id: str) -> dict:
+        return await self.app.emulator_bios_uninstall(emulator_id)
+
     async def emulator_uninstall(self, emulator_id: str) -> dict:
         return await self.app.emulator_uninstall(emulator_id)
 
     async def emulator_reset(self, emulator_id: str) -> dict:
         return await self.app.emulator_reset(emulator_id)
-
-    async def rescan_bios(self) -> dict:
-        return await self.app.rescan_bios()
-
-    async def emulator_bios_from_romm(self, emulator_id: str) -> dict:
-        return await self.app.emulator_bios_from_romm(emulator_id)
 
     async def cancel_download(self, rom_id: int) -> dict:
         return await self.app.cancel_download(rom_id)

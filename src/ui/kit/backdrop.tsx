@@ -176,3 +176,31 @@ export function FocusBackdrop({ visible }: { visible: boolean }) {
     </div>
   );
 }
+
+/**
+ * Fills its positioned parent with the muted backdrop of one of `sources`, picked anew every `everyMs`, each fading
+ * in over the one before. For a page that is waiting on something and has games to show meanwhile.
+ */
+export function RotatingBackdrop({ sources, everyMs }: { sources: string[]; everyMs: number }) {
+  const pool = useRef(sources);
+  pool.current = sources;
+  const [layers, setLayers] = useState<Shown[]>([]);
+  const nextId = useRef(0);
+  const has = sources.length > 0;
+  useEffect(() => {
+    if (!has) return;
+    const show = () => setLayers((cur) => {
+      const last = cur[cur.length - 1]?.src;
+      const others = pool.current.filter((s) => s !== last);
+      const src = others[Math.floor(Math.random() * others.length)];
+      return src ? [...cur, { id: nextId.current++, src }] : cur;
+    });
+    show();
+    const timer = setInterval(show, everyMs);
+    return () => clearInterval(timer);
+  }, [has, everyMs]);
+  const settled = useCallback((id: number) => setLayers((cur) => cur.filter((s) => s.id >= id)), []);
+  const dropped = useCallback((id: number) => setLayers((cur) => cur.filter((s) => s.id !== id)), []);
+  if (!layers.length) return null;
+  return <Layer shown={layers} look={PAGE} onShown={settled} onFailed={dropped} />;
+}

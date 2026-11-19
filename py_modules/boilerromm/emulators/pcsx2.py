@@ -1,5 +1,6 @@
 """PCSX2 (PlayStation 2), run from the project's own AppImage."""
 import os
+import re
 
 from . import inifile
 from .base import Command, Emulator, Firmware
@@ -59,6 +60,8 @@ BIOS = (
 
 
 class Pcsx2(Emulator):
+    year = 2000
+
     id = "pcsx2"
     name = "PCSX2"
     system = "PlayStation 2"
@@ -66,18 +69,56 @@ class Pcsx2(Emulator):
     source = Source("PCSX2/pcsx2", r"linux-appimage-x64-Qt\.AppImage$", TAG)
     firmware = tuple(Firmware("ps2", name, md5) for name, md5 in BIOS)
 
+    def expected_files(self, platform: str) -> str:
+        return "scph39001.bin, ps2-0230a-20080220.bin, …"
+
     @property
     def ini(self) -> str:
         return os.path.join(self.config_dir, "PCSX2", "inis", "PCSX2.ini")
 
+    # PCSX2 boots the first valid image it comes across unless one is named, so one always is.
+    @property
+    def bios_in_use(self) -> str:
+        """The BIOS PCSX2 is told to boot; "" when it names none or a file that is gone."""
+        name = inifile.read(self.ini, "Filenames", "BIOS")
+        return name if name and os.path.isfile(os.path.join(self.layout.bios("ps2"), name)) else ""
+
+    @staticmethod
+    def _rank(name: str) -> tuple:
+        """Newest American image first, then European, then the rest: "ps2-0230a-20080220.bin" is 2.30, region a."""
+        m = re.match(r"ps2-(\d{4})([a-z])", name)
+        return ("aej".find(m.group(2)) if m and m.group(2) in "aej" else 3, -int(m.group(1)) if m else 0, name)
+
+    def recommended(self, entries: list[dict]) -> dict | None:
+        names = {f.md5: f.name for f in self.firmware}
+        return min(entries, key=lambda e: self._rank(names.get((e.get("md5_hash") or "").lower(), ""))) if entries else None
+
+    def _best_found(self) -> str:
+        return min((f.name for f in self.firmware_found()), key=self._rank, default="")
+
+    def firmware_label(self) -> str:
+        # Before the next start names one, the one it will name.
+        return self.bios_in_use or self._best_found()
+
+    def add_firmware(self, path: str) -> Firmware | None:
+        added = super().add_firmware(path)
+        if added:
+            inifile.update(self.ini, values={"Filenames": {"BIOS": added.name}})
+        return added
+
+    def remove_firmware(self) -> None:
+        super().remove_firmware()
+        inifile.update(self.ini, values={"Filenames": {"BIOS": ""}})
+
     def configure(self) -> None:
+        best = "" if self.bios_in_use else self._best_found()
         inifile.update(
             self.ini,
             values={"Folders": {
                 "Bios": self.layout.bios("ps2"),
                 "MemoryCards": self.layout.saves("ps2", self.id),
                 "SaveStates": self.layout.states("ps2", self.id),
-            }},
+            }, **({"Filenames": {"BIOS": best}} if best else {})},
             defaults={"UI": {
                 "SettingsVersion": SETTINGS_VERSION,
                 "StartFullscreen": "true",

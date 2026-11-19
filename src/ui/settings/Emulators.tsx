@@ -6,7 +6,7 @@ import { emulatorLogo } from "../emulatorLogos";
 import { run } from "./common";
 import { RowButton, RowControls, RowFill, RowMoreButton, SettingsList, SettingsRow } from "../kit/settings";
 
-const BUSY_TEXT: Record<Exclude<EmulatorInfo["busy"], "">, string> = { queued: "Waiting to install…", installing: "Installing…", uninstalling: "Uninstalling…", resetting: "Resetting…", fetching: "Getting BIOS…" };
+const BUSY_TEXT: Record<Exclude<EmulatorInfo["busy"], "">, string> = { queued: "Waiting to install…", installing: "Installing…", removing: "Removing firmware…", firmware: "Installing automatically detected firmware. This may take a few minutes…", uninstalling: "Uninstalling…", resetting: "Resetting…", fetching: "Getting BIOS…" };
 
 /** The line under the name: what it emulates, then where it stands. */
 function subtitle(e: EmulatorInfo): string {

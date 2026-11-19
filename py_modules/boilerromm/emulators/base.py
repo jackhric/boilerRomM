@@ -4,6 +4,7 @@ Each emulator's files are split by how replaceable they are. The build and its c
 config is rewritten by prepare(), and saves, states and firmware are the user's: nothing here deletes those.
 """
 import hashlib
+import asyncio
 import os
 import shutil
 from dataclasses import dataclass
@@ -88,6 +89,9 @@ class Emulator:
     source: releases.Source
     firmware: tuple[Firmware, ...] = ()
     requires = "a BIOS"               # what the user must supply, as it reads after "needs"
+    year = 0                          # when its oldest system came out: emulators are listed and installed in this order
+    accepts = ".bin"                  # the kind of firmware file it takes, as shown to the user
+    firmware_set = False              # it takes a set of files, not one
     recent_versions = 20              # how many of the project's newest releases to offer besides the latest
 
     def __init__(self, layout: Layout):
@@ -183,9 +187,46 @@ class Emulator:
     def platform_ready(self, platform: str) -> bool:
         return any(f.platform == platform for f in self.firmware_found())
 
+    def expected_files(self, platform: str) -> str:
+        """The files to put on the RomM server for this platform, as they are usually named."""
+        names = list(dict.fromkeys(f.name for f in self.firmware if f.platform == platform))
+        return ", ".join(names[:3]) + (", …" if len(names) > 3 else "")
+
+    def compatible(self, entry: dict) -> bool:
+        """Whether a firmware file RomM lists ({file_name, md5_hash, ...}) is one this emulator can use, judged
+        before it is downloaded. Without a checksum from RomM the name has to do; the download is checked again."""
+        md5 = (entry.get("md5_hash") or "").lower()
+        if md5:
+            return any(f.md5 == md5 for f in self.firmware)
+        return str(entry.get("file_name", "")).lower().endswith(self.accepts.lower())
+
+    def recommended(self, entries: list[dict]) -> dict | None:
+        """The one of RomM's compatible files to install when nobody chooses."""
+        return entries[0] if entries else None
+
+    def firmware_label(self) -> str:
+        """What is installed, in a few words; "" when nothing is."""
+        names = list(dict.fromkeys(f.name for f in self.firmware_found()))
+        return ", ".join(names) if len(names) <= 2 else f"{len(names)} files"
+
+    def remove_firmware(self) -> None:
+        """Deletes the firmware files this emulator recognises; other files in the folders are left."""
+        known = {f.md5 for f in self.firmware}
+        for platform in self.bios_platforms():
+            folder = self.layout.bios(platform)
+            try:
+                names = os.listdir(folder)
+            except OSError:
+                continue
+            for name in names:
+                path = os.path.join(folder, name)
+                if os.path.isfile(path) and md5_of(path) in known:
+                    os.unlink(path)
+
     def bios_status(self) -> list[dict]:
         found = self.firmware_found()
-        return [{"platform": p, "folder": self.layout.bios(p), "found": [f.name for f in found if f.platform == p], "ready": self.platform_ready(p)}
+        return [{"platform": p, "folder": self.layout.bios(p), "found": [f.name for f in found if f.platform == p], "ready": self.platform_ready(p),
+                 "expects": self.expected_files(p)}
                 for p in self.bios_platforms()]
 
     def add_firmware(self, path: str) -> Firmware | None:
@@ -219,6 +260,28 @@ class Emulator:
         self.prepare()
 
     # Launch
+    @property
+    def firmware_installed(self) -> bool:
+        """Whether the firmware is where the emulator uses it; for most, having the files is all there is to it."""
+        return self.firmware_ready()
+
+    async def install_firmware(self) -> None:
+        """Whatever the emulator must do with its firmware files before a game can start; most only need the files."""
+
+    async def run(self, *args: str, timeout: float) -> int:
+        """Runs the emulator itself with `args`, without a window, and waits for it to end."""
+        # Decky Loader's own Python points these at its bundle, which an AppImage must not load from.
+        env = {k: v for k, v in os.environ.items() if k not in ("LD_LIBRARY_PATH", "PYTHONHOME", "PYTHONPATH")}
+        process = await asyncio.create_subprocess_exec(
+            self.executable, *args, env={**env, **self.env()}, cwd=self.home,
+            stdin=asyncio.subprocess.DEVNULL, stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.DEVNULL)
+        try:
+            return await asyncio.wait_for(process.wait(), timeout)
+        except BaseException:
+            if process.returncode is None:
+                process.kill()
+            raise
+
     def env(self) -> dict[str, str]:
         # Most emulators follow the XDG folders, which keeps their files out of the user's own ~/.config.
         return {"XDG_CONFIG_HOME": self.config_dir, "XDG_DATA_HOME": self.data_dir, "XDG_CACHE_HOME": self.cache_dir}
@@ -234,4 +297,6 @@ class Emulator:
         version, firmware = self.version, self.firmware_ready()
         return {"id": self.id, "name": self.name, "system": self.system, "platforms": list(self.platforms), "installed": bool(version),
                 "version": version, "version_name": self.version_name, "firmware": firmware, "requires": self.requires, "ready": bool(version) and firmware,
-                "configured": os.path.isdir(self.config_dir) and bool(os.listdir(self.config_dir)), "bios": self.bios_status()}
+                "configured": os.path.isdir(self.config_dir) and bool(os.listdir(self.config_dir)), "bios": self.bios_status(),
+                "firmware_installed": self.firmware_installed, "year": self.year, "accepts": self.accepts,
+                "firmware_set": self.firmware_set, "firmware_label": self.firmware_label()}

@@ -11,6 +11,8 @@ TAG = "2609a@2026-11-01_1793557796"
 
 
 class Dolphin(Emulator):
+    year = 2001
+
     id = "dolphin"
     name = "Dolphin"
     system = "GameCube and Wii"

@@ -16,6 +16,9 @@ SEEDED = {"scaling_filter": "15", "gpu_accuracy": "0", "nvdec_emulation": "2", "
 KEYS = "prod.keys"
 # The one key every encrypted game needs (KeyManager::BaseDeriveNecessary). Key files differ from console to
 # console and firmware to firmware, so there is no checksum to know them by.
+# title.keys: one "rights id = title key" pair of 32 hex digits a line; some NSPs cannot be opened without theirs.
+TITLE_KEYS = "title.keys"
+TITLE_KEY = re.compile(rb"^\s*[0-9a-fA-F]{32}\s*=\s*[0-9a-fA-F]{32}\s*$", re.MULTILINE)
 HEADER_KEY = re.compile(rb"^\s*header_key\s*=\s*[0-9a-fA-F]{64}\s*$", re.MULTILINE)
 
 
@@ -27,12 +30,24 @@ def is_keys_file(path: str) -> bool:
         return False
 
 
+def is_title_keys_file(path: str) -> bool:
+    try:
+        with open(path, "rb") as f:
+            return bool(TITLE_KEY.search(f.read(1 << 20)))
+    except OSError:
+        return False
+
+
 def _set(items: dict[str, str]) -> dict[str, str]:
     # A value is only read when its "\default" twin says it is not the default.
     return {k: v for key, value in items.items() for k, v in ((f"{key}\\default", "false"), (key, value))}
 
 
 class Lichii(Emulator):
+    year = 2017
+    accepts = ".keys"
+    firmware_set = True
+
     id = "lichii"
     name = "Lichii"
     system = "Nintendo Switch and Switch 2"
@@ -88,7 +103,21 @@ class Lichii(Emulator):
 
     def firmware_found(self) -> list[Firmware]:
         paths = (self.keys, os.path.join(self.keys_dir, KEYS))
-        return [Firmware("switch", KEYS, "")] if any(is_keys_file(p) for p in paths) else []
+        if not any(is_keys_file(p) for p in paths):
+            return []
+        title = is_title_keys_file(os.path.join(os.path.dirname(self.keys), TITLE_KEYS))
+        return [Firmware("switch", KEYS, "")] + ([Firmware("switch", TITLE_KEYS, "")] if title else [])
+
+    def compatible(self, entry: dict) -> bool:
+        return str(entry.get("file_name", "")).lower().endswith(".keys")
+
+    def remove_firmware(self) -> None:
+        for folder in (os.path.dirname(self.keys), self.keys_dir):
+            for name in (KEYS, TITLE_KEYS):
+                try:
+                    os.unlink(os.path.join(folder, name))
+                except OSError:
+                    pass
 
     def bios_platforms(self) -> tuple[str, ...]:
         return ("switch",)
@@ -96,12 +125,16 @@ class Lichii(Emulator):
     def firmware_ready(self) -> bool:
         return bool(self.firmware_found())
 
+    def expected_files(self, platform: str) -> str:
+        return f"{KEYS}, {TITLE_KEYS}"
+
     def add_firmware(self, path: str) -> Firmware | None:
-        if not is_keys_file(path):
+        name = KEYS if is_keys_file(path) else TITLE_KEYS if is_title_keys_file(path) else ""
+        if not name:
             return None
         os.makedirs(os.path.dirname(self.keys), exist_ok=True)
-        shutil.copyfile(path, self.keys)
-        return Firmware("switch", KEYS, "")
+        shutil.copyfile(path, os.path.join(os.path.dirname(self.keys), name))
+        return Firmware("switch", name, "")
 
     def command(self, rom: str, platform: str = "") -> Command:
         return Command([self.executable, "-f", "-g", rom], self.env())

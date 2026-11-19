@@ -1,4 +1,3 @@
-import asyncio
 import logging
 import os
 
@@ -15,9 +14,10 @@ async def _noop(*a):
 
 
 class FakeRomm:
-    def __init__(self, files=None, me=None, heartbeat=None):
+    def __init__(self, files=None, me=None, heartbeat=None, md5=None):
         self.base_url = "https://romm"
         self.files = files or {}
+        self.md5 = md5 or {}
         self._me = me
         self._heartbeat = heartbeat
 
@@ -35,7 +35,8 @@ class FakeRomm:
         return [{"id": 7, "fs_slug": "ps3"}, {"id": 9, "fs_slug": "ps2"}]
 
     async def firmware(self, platform_id):
-        return [{"id": i, "file_name": name} for i, (name, (pid, _)) in enumerate(self.files.items(), 1) if pid == platform_id]
+        return [{"id": i, "file_name": name, "md5_hash": self.md5.get(name), "file_size_bytes": len(data)}
+                for i, (name, (pid, data)) in enumerate(self.files.items(), 1) if pid == platform_id]
 
     async def fetch_firmware(self, firmware_id, file_name, dest):
         with open(dest, "wb") as f:
@@ -94,21 +95,9 @@ def test_storage_counts_installed_games_and_the_drive_of_the_rom_folder(app, tmp
     assert storage["total_bytes"] >= storage["free_bytes"] > 0
 
 
-async def test_rescanning_sends_the_state_again(tmp_path):
-    sent = []
-
-    async def emit(event, payload):
-        sent.append(event)
-
-    app = App(str(tmp_path / "settings.json"), "1", str(tmp_path), emit, logging.getLogger("t"), data_dir=str(tmp_path / "data"))
-    await app.rescan_bios()
-    await asyncio.sleep(0)
-    assert sent == ["boilerromm_state"]
-
-
 async def test_bios_from_romm_keeps_only_files_the_emulator_recognises(app):
     app.client = FakeRomm({"PS3UPDAT.PUP": (7, PUP), "readme.txt": (7, b"nothing"), "ps2.bin": (9, b"other platform")})
-    state = await app.emulator_bios_from_romm("rpcs3")
+    state = await app.emulator_bios_install("rpcs3")
     rpcs3 = next(e for e in state["emulators"] if e["id"] == "rpcs3")
     assert rpcs3["error"] == "" and rpcs3["busy"] == ""
     assert rpcs3["bios"][0]["ready"] and rpcs3["bios"][0]["found"] == ["PS3UPDAT.PUP"]
@@ -117,17 +106,17 @@ async def test_bios_from_romm_keeps_only_files_the_emulator_recognises(app):
 
 async def test_bios_from_romm_says_why_nothing_was_kept(app):
     app.client = FakeRomm({"readme.txt": (7, b"nothing")})
-    state = await app.emulator_bios_from_romm("rpcs3")
+    state = await app.emulator_bios_install("rpcs3")
     assert next(e for e in state["emulators"] if e["id"] == "rpcs3")["error"] == "None of RomM's files are ones it can use"
 
     app.client = FakeRomm({})
-    state = await app.emulator_bios_from_romm("rpcs3")
+    state = await app.emulator_bios_install("rpcs3")
     assert next(e for e in state["emulators"] if e["id"] == "rpcs3")["error"] == "RomM has no firmware for this emulator"
 
 
 async def test_bios_from_romm_needs_a_signed_in_device(app):
     app.settings.token = ""
-    state = await app.emulator_bios_from_romm("rpcs3")
+    state = await app.emulator_bios_install("rpcs3")
     assert next(e for e in state["emulators"] if e["id"] == "rpcs3")["error"] == "Connect to RomM first"
 
 
@@ -158,8 +147,16 @@ async def test_a_game_whose_emulator_lacks_firmware_gets_it_from_romm_before_it_
     _installed(rpcs3)
     assert "needs" in app.launch_target(5)["blocked"]
 
-    assert (await app.play_target(5))["blocked"] == ""
+    assert (await app.play_target(5))["blocked"] == "RPCS3 could not install its firmware. Try again in Settings, under BIOS."
     assert os.listdir(rpcs3.layout.bios("ps3")) == ["PS3UPDAT.PUP"]
+
+    async def run(*args, timeout):
+        os.makedirs(os.path.dirname(rpcs3.firmware_version_file))
+        open(rpcs3.firmware_version_file, "w").close()
+        return 0
+
+    rpcs3.run = run
+    assert (await app.play_target(5))["blocked"] == ""
 
 
 async def test_a_game_stays_blocked_with_the_reason_when_romm_has_no_firmware(app):
@@ -171,3 +168,79 @@ async def test_a_game_stays_blocked_with_the_reason_when_romm_has_no_firmware(ap
     assert target["blocked"] == "PCSX2 needs a BIOS, and RomM did not have one. Add it in Settings, under BIOS."
     assert app.state()["emulators"][1]["error"] == ""
     assert app.launch_target(6)["blocked"] == "boilerRomM has no emulator for Odd."
+
+
+async def test_installing_an_emulator_that_needs_firmware_shows_a_step_for_it(app, monkeypatch):
+    app.client = FakeRomm({"PS3UPDAT.PUP": (7, PUP)})
+    rpcs3 = app.emulators["rpcs3"]
+    seen, installed = [], []
+
+    async def install(session, tag=""):
+        _installed(rpcs3)
+
+    async def install_firmware():
+        seen.append((app._emulator_busy.get("rpcs3"), os.listdir(rpcs3.layout.bios("ps3"))))
+        installed.append(True)
+
+    class Session:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *a):
+            pass
+
+    monkeypatch.setattr(rpcs3, "install", install)
+    monkeypatch.setattr(rpcs3, "install_firmware", install_firmware)
+    app._release_session = Session
+    state = await app.emulator_install("rpcs3")
+    assert seen == [("firmware", ["PS3UPDAT.PUP"])]
+    assert next(e for e in state["emulators"] if e["id"] == "rpcs3")["busy"] == ""
+
+
+def test_every_firmware_folder_says_which_files_it_expects(app):
+    for emulator in app.emulators.values():
+        for entry in emulator.bios_status():
+            assert entry["expects"], (emulator.id, entry["platform"])
+
+
+async def test_the_bios_page_is_told_which_of_romms_files_each_emulator_can_install(app):
+    newest_usa, old_japan = "21038400dc633070a78ad53090c53017", "acf4730ceb38ac9d8c7d8e21f2614600"
+    app.client = FakeRomm({"PS3UPDAT.PUP": (7, PUP), "notes.txt": (7, b"x"), "a.bin": (9, b"x"), "b.bin": (9, b"y"), "c.bin": (9, b"z")},
+                          md5={"a.bin": old_japan, "b.bin": newest_usa, "c.bin": "0" * 32})
+    available = await app.bios_available()
+    assert [f["name"] for f in available["rpcs3"]] == ["PS3UPDAT.PUP"]
+    assert [(f["name"], f["recommended"]) for f in available["pcsx2"]] == [("b.bin", True), ("a.bin", False)]
+    assert available["lichii"] == [] and "dolphin" not in available
+
+    app.settings.token = ""
+    assert (await app.bios_available())["rpcs3"] == []
+
+
+async def test_pcsx2_installs_one_bios_names_it_in_its_settings_and_can_remove_it(app):
+    import hashlib
+
+    from boilerromm.emulators import Firmware, inifile
+
+    # Stand-ins for two real images: the names are what matter, so they are known by the checksum of made-up bytes.
+    images = {name: name.encode() for name in ("ps2-0100j-20000117.bin", "ps2-0230a-20080220.bin")}
+    md5 = {name: hashlib.md5(data).hexdigest() for name, data in images.items()}
+    pcsx2 = app.emulators["pcsx2"]
+    pcsx2.firmware = tuple(Firmware("ps2", name, md5[name]) for name in images)
+    app.client = FakeRomm({name: (9, data) for name, data in images.items()}, md5=md5)
+
+    state = await app.emulator_bios_install("pcsx2")
+    status = next(e for e in state["emulators"] if e["id"] == "pcsx2")
+    assert status["firmware_label"] == "ps2-0230a-20080220.bin" and os.listdir(pcsx2.layout.bios("ps2")) == ["ps2-0230a-20080220.bin"]
+    assert inifile.read(pcsx2.ini, "Filenames", "BIOS") == "ps2-0230a-20080220.bin"
+
+    japan = next(f["id"] for f in (await app.bios_available())["pcsx2"] if f["name"].startswith("ps2-0100j"))
+    await app.emulator_bios_install("pcsx2", [japan])
+    assert pcsx2.firmware_label() == "ps2-0100j-20000117.bin" and len(os.listdir(pcsx2.layout.bios("ps2"))) == 2
+
+    state = await app.emulator_bios_uninstall("pcsx2")
+    status = next(e for e in state["emulators"] if e["id"] == "pcsx2")
+    assert os.listdir(pcsx2.layout.bios("ps2")) == [] and status["firmware_label"] == "" and not status["firmware"]
+
+
+def test_emulators_are_listed_oldest_system_first(app):
+    assert list(app.emulators) == ["retroarch", "pcsx2", "dolphin", "xenia", "rpcs3", "cemu", "shadps4", "lichii", "kyty"]

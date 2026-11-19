@@ -17,7 +17,7 @@ function detail(i: Install, game: Game | undefined, p: Progress | undefined): st
   if (i.state === "downloading" && p) {
     what = `${Math.round(percent(p))}%  ·  ${formatSize(p.done_bytes)} of ${formatSize(p.total_bytes)}${p.bps ? `  ·  ${formatSize(p.bps)}/s` : ""}`;
   } else if (i.state === "downloading") what = "Starting…";
-  else if (i.state === "queued") what = "Waiting";
+  else if (i.state === "queued") what = "Waiting…";
   else if (i.state === "paused") what = `Paused  ·  ${formatSize(i.bytes_done)} of ${size}`;
   else if (i.state === "incomplete") what = `${i.bytes_done ? `${formatSize(i.bytes_done)} of ${size}` : "Files missing"}`;
   return [game?.platform, what].filter(Boolean).join("  ·  ");

@@ -102,3 +102,12 @@ def test_add_firmware_takes_only_a_keys_file_whatever_it_is_called(lichii, tmp_p
     assert lichii.add_firmware(write(tmp_path / "in" / "my switch.keys", KEYS)).name == "prod.keys"
     assert (tmp_path / "bios" / "switch" / "prod.keys").read_bytes() == KEYS
     assert lichii.firmware_ready()
+
+
+def test_title_keys_are_kept_beside_the_keys_but_are_not_enough_alone(lichii, tmp_path):
+    title = tmp_path / "anything.txt"
+    title.write_text("0100000000010000000000000000000" + "5 = " + "ab" * 16 + "\n")
+    assert lichii.add_firmware(str(title)).name == "title.keys"
+    assert os.listdir(lichii.layout.bios("switch")) == ["title.keys"]
+    assert not lichii.firmware_ready()
+    assert lichii.bios_status()[0]["expects"] == "prod.keys, title.keys"

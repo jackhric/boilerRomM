@@ -9,8 +9,8 @@ from .rpcs3 import Rpcs3
 from .shadps4 import ShadPs4
 from .xenia import Xenia
 
-# In the order the settings page lists them.
-ALL: tuple[type[Emulator], ...] = (RetroArch, Pcsx2, Dolphin, Cemu, Rpcs3, ShadPs4, Kyty, Xenia, Lichii)
+# Oldest system first: the order they are listed and installed in.
+ALL: tuple[type[Emulator], ...] = tuple(sorted((RetroArch, Pcsx2, Dolphin, Cemu, Rpcs3, ShadPs4, Kyty, Xenia, Lichii), key=lambda e: e.year))
 
 
 def for_platform(platform: str, layout: Layout) -> Emulator | None:

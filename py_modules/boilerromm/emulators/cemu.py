@@ -63,11 +63,27 @@ def _profile() -> str:
 
 
 class Cemu(Emulator):
+    year = 2012
+    accepts = "keys.txt"
+
     id = "cemu"
     name = "Cemu"
     system = "Wii U"
     platforms = ("wiiu",)
     requires = "a keys.txt for WUD and WUX disc images"
+
+    def expected_files(self, platform: str) -> str:
+        return KEYS
+
+    def compatible(self, entry: dict) -> bool:
+        return str(entry.get("file_name", "")).lower() == KEYS
+
+    def remove_firmware(self) -> None:
+        for path in (self.keys, self.keys_in_use):
+            try:
+                os.unlink(path)
+            except OSError:
+                pass
     source = Source("cemu-project/Cemu", r"-x86_64\.AppImage$", TAG)
 
     @property
@@ -125,7 +141,8 @@ class Cemu(Emulator):
 
     def bios_status(self) -> list[dict]:
         found = self.firmware_found()
-        return [{"platform": "wiiu", "folder": self.layout.bios("wiiu"), "found": [f.name for f in found], "ready": bool(found)}]
+        return [{"platform": "wiiu", "folder": self.layout.bios("wiiu"), "found": [f.name for f in found], "ready": bool(found),
+                 "expects": self.expected_files("wiiu")}]
 
     def add_firmware(self, path: str) -> Firmware | None:
         if not is_keys_file(path):

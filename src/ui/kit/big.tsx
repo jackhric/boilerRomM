@@ -71,9 +71,10 @@ export function Steps({ items, small }: { items: { text: ReactNode; lead?: React
 }
 
 /** A row like the ones on Steam's settings pages: what it is on the left, its state on the right. */
-export function StatusRow({ left, right, minHeight = 84, padding = "16px 20px" }: { left: ReactNode; right?: ReactNode; minHeight?: number; padding?: string }) {
+/** `active`: the row being worked on, a shade lighter than the rest. */
+export function StatusRow({ left, right, minHeight = 84, padding = "16px 20px", active }: { left: ReactNode; right?: ReactNode; minHeight?: number; padding?: string; active?: boolean }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 28, background: "#232a33", padding, minHeight }}>
+    <div data-active={active || undefined} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 28, background: active ? "rgba(84,98,116,.6)" : "rgba(35,42,51,.55)", padding, minHeight, transition: "background .3s ease-out" }}>
       <div style={{ minWidth: 0 }}>{left}</div>
       <div style={{ flex: "0 0 auto", display: "flex", alignItems: "center" }}>{right}</div>
     </div>
