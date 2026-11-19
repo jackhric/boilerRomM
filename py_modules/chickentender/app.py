@@ -10,6 +10,7 @@ import logging
 import os
 import socket
 from collections.abc import Awaitable, Callable
+from dataclasses import dataclass
 from typing import Any
 
 import aiohttp
@@ -49,6 +50,15 @@ def device_identity(version: str) -> dict:
         "platform": "steamos",
         "client_version": version,
     }
+
+
+@dataclass(frozen=True)
+class Held:
+    """A ledger record with what the disk says about it."""
+    install: Install
+    target: Target
+    seen: L.Check
+    state: str
 
 
 class App:
@@ -130,15 +140,16 @@ class App:
     # Snapshot
     def state(self) -> dict:
         s = self.settings
+        held = self.held()
         return {
             "server": {"url": s.server_url, **self.server},
             "pairing": self.pairing.state.as_dict() if self.pairing else {"status": "idle"},
             "account": {"paired": s.paired, "username": s.username, "device_id": s.device_id,
                         "device_name": self.identity["name"]},
-            "library": self.library.snapshot(self.status, lambda g: self.art.urls(g.rom_id, g.sgdb_id, g.name)),
+            "library": self.library.snapshot(lambda rom_id: self.status(rom_id, held), lambda g: self.art.urls(g.rom_id, g.sgdb_id, g.name)),
             "downloads": self.downloader.snapshot() if self.downloader else {"active": None, "queue": [], "roms_dir": self.location.roms_dir},
-            "installs": self.installs(),
-            "installed": self.installed(),
+            "installs": self.installs(held),
+            "installed": self.installed(held),
             "roms_dir_exists": self.location.exists,
             "retrodeck": self.retrodeck.as_dict(),
             "sgdb": {"configured": self.sgdb is not None, "error": self.sgdb_error,
@@ -150,40 +161,43 @@ class App:
     def _target(self, install: Install) -> Target:
         return self.location.target(install.slug, install.fs_name, install.single_file)
 
-    def status(self, rom_id: int) -> str:
-        """A game's state: the ledger's, except that an installed game with files gone reads as incomplete."""
-        install = self.ledger.get(rom_id)
-        if not install:
-            return "available"
-        if install.state == L.INSTALLED and not L.check(install, self._target(install).path).complete:
-            return L.INCOMPLETE
-        return install.state
-
-    def installs(self) -> list[dict]:
-        """Every game the ledger knows, held against the disk."""
-        out = []
+    def held(self) -> dict[int, "Held"]:
+        """Every record held against the disk once; a snapshot shares one of these between its parts."""
+        out = {}
         for i in self.ledger.all():
-            seen = L.check(i, self._target(i).path)
-            out.append({"rom_id": i.rom_id, "name": i.name, "state": self.status(i.rom_id), "appid": self.shortcuts.appid(i.rom_id),
-                        "bytes_done": seen.done_bytes, "bytes_total": seen.total_bytes, "missing": list(seen.missing),
-                        "error": i.error, "queued_at": i.queued_at, "updated_at": i.updated_at, "completed_at": i.completed_at})
+            target = self._target(i)
+            seen = L.check(i, target.path)
+            # An installed game with files gone reads as incomplete.
+            state = L.INCOMPLETE if i.state == L.INSTALLED and not seen.complete else i.state
+            out[i.rom_id] = Held(i, target, seen, state)
         return out
 
-    def installed(self) -> list[dict]:
+    def status(self, rom_id: int, held: dict[int, "Held"] | None = None) -> str:
+        h = (self.held() if held is None else held).get(rom_id)
+        return h.state if h else "available"
+
+    def installs(self, held: dict[int, "Held"] | None = None) -> list[dict]:
+        """Every game the ledger knows, held against the disk."""
+        return [{"rom_id": h.install.rom_id, "name": h.install.name, "state": h.state, "appid": self.shortcuts.appid(h.install.rom_id),
+                 "bytes_done": h.seen.done_bytes, "bytes_total": h.seen.total_bytes, "missing": list(h.seen.missing),
+                 "error": h.install.error, "queued_at": h.install.queued_at, "updated_at": h.install.updated_at,
+                 "completed_at": h.install.completed_at}
+                for h in (self.held() if held is None else held).values()]
+
+    def installed(self, held: dict[int, "Held"] | None = None) -> list[dict]:
         """Complete games that have a Steam shortcut, with what Steam's storage pages show for an installed app."""
         out = []
-        for i in self.ledger.all():
-            appid, target = self.shortcuts.appid(i.rom_id), self._target(i)
-            seen = L.check(i, target.path)
-            if not appid or i.state != L.INSTALLED or not seen.complete:
+        for h in (self.held() if held is None else held).values():
+            appid = self.shortcuts.appid(h.install.rom_id)
+            if not appid or h.state != L.INSTALLED:
                 continue
             try:
-                device = os.stat(target.path).st_dev
+                device = os.stat(h.target.path).st_dev
             except OSError:
                 continue
-            out.append({"rom_id": i.rom_id, "appid": appid, "name": i.name, "path": target.path,
-                        "folder": target.path if target.is_dir else os.path.dirname(target.path),
-                        "bytes": seen.done_bytes, "device": device})
+            out.append({"rom_id": h.install.rom_id, "appid": appid, "name": h.install.name, "path": h.target.path,
+                        "folder": h.target.path if h.target.is_dir else os.path.dirname(h.target.path),
+                        "bytes": h.seen.done_bytes, "device": device})
         return out
 
     async def adopt(self) -> None:
