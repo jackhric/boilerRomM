@@ -3,9 +3,6 @@ import { addEventListener, callable, removeEventListener } from "@decky/api";
 
 /** The install ledger's state for a game (py_modules/chickentender/ledger.py); "available" has no record. */
 export type GameStatus = "available" | "queued" | "downloading" | "paused" | "incomplete" | "failed" | "installed";
-/** Stopped short of installed: Resume continues it, Remove clears it. */
-export const isStopped = (status: GameStatus) => status === "paused" || status === "incomplete" || status === "failed";
-export const STOPPED_TEXT: Record<"paused" | "incomplete" | "failed", string> = { paused: "Paused", incomplete: "Partly downloaded", failed: "Download failed" };
 
 export interface Game {
   rom_id: number;
@@ -171,26 +168,11 @@ export const setShortcut = callable<[rom_id: number, appid: number], State>("set
 /** Fetches RomM's file list for the game again and checks the disk against it. */
 export const verifyGame = callable<[rom_id: number], State>("verify");
 export const removeGame = callable<[rom_id: number], State & { removed: number }>("remove");
-const backendDownload = callable<[rom_id: number, appid: number], State>("download");
+/** Queues a download for a game whose Steam shortcut is `appid` (0 for none). */
+export const queueDownload = callable<[rom_id: number, appid: number], State>("download");
 
 export interface LaunchTarget { rom_id: number; name: string; appid: number; exe: string; start_dir: string; launch_options: string; cover: string; installed: boolean }
 
-/** Steam-side preparation of a download (the shortcut), installed by index.tsx; without it downloads still work. */
-let prepare: (rom_id: number) => Promise<number> = async () => 0;
-export function setDownloadPreparation(fn: (rom_id: number) => Promise<number>) {
-  prepare = fn;
-}
-
-/** Queues a download; creates the Steam shortcut first when Steam allows it. */
-export async function download(rom_id: number): Promise<State> {
-  let appid = 0;
-  try {
-    appid = await prepare(rom_id);
-  } catch {
-    appid = 0;
-  }
-  return backendDownload(rom_id, appid);
-}
 /** Direct stream addresses for the game's trailer at about 360p and 720p (both silent) and its sound; "" when not resolved. */
 export const gameVideo = callable<[rom_id: number], { rom_id: number; small: string; large: string; audio: string }>("game_video");
 export const setRomsDir = callable<[path: string], State>("set_roms_dir");
@@ -207,11 +189,3 @@ export function onProgress(listener: (p: Progress) => void): () => void {
   addEventListener<[Progress]>(PROGRESS_EVENT, listener);
   return () => removeEventListener(PROGRESS_EVENT, listener);
 }
-
-export const STORE_ROUTE = "/chickentender";
-export const GAME_ROUTE = "/chickentender/game/:rom_id";
-/** The route of one game's detail page. */
-export const gameRoute = (rom_id: number) => `/chickentender/game/${rom_id}`;
-export const CONSOLE_ROUTE = "/chickentender/console/:platform_id";
-/** The route of one console's library page. */
-export const consoleRoute = (platform_id: number) => `/chickentender/console/${platform_id}`;

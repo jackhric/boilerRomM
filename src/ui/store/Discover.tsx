@@ -1,12 +1,13 @@
 // The store's front page: the spotlight hero, Featured capsules with a video preview, and the shelves.
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Capsule, ConsoleBanner, Shelf, TileFocus, WIDE_SMALL_W, WIDE_W, WideCapsule } from "../kit";
-import { openGamePage, useVideo, warmVideos } from "../hooks";
-import { useGameDetails } from "./model";
 import { useTileFocus } from "./catalog";
 import { DiscoverProps, makeStore, Spotlight } from "./StorePage";
 import { SV_CSS } from "./styles";
 import { HeroCapsule } from "./FeaturedCapsule";
+import { useGameDetails } from "../game/details";
+import { useVideo, warmVideos } from "../kit/video";
+import { openGamePage } from "./hooks";
 
 const SPOTLIGHT_PICKS = 5;
 

@@ -2,10 +2,10 @@ import { Focusable } from "@decky/ui";
 import { useRef } from "react";
 import { consoleLogo } from "../consoleLogos";
 import { Page } from "../kit";
-import { useReturnFocus } from "../hooks";
 import { ConsoleProps } from "../pages";
 import { SpotlightStyle } from "./catalog";
 import { LibraryView } from "./LibraryView";
+import { useReturnFocus } from "../kit/focus";
 
 /** One console's games: the shared library view with the console fixed. */
 export function Console({ platform, games, progress }: ConsoleProps) {

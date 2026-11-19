@@ -1,29 +1,8 @@
 import { Focusable, Menu, MenuItem, showContextMenu, TextField } from "@decky/ui";
 import { ReactNode, RefObject, useCallback, useEffect, useRef, useState } from "react";
 import { FaChevronDown, FaHdd, FaSearch, FaTimes } from "react-icons/fa";
-import { Game } from "../../api";
+import { ConsoleEntry, Filters, filtersActive } from "../../domain/catalog";
 import { Button, C } from "../kit";
-import { ConsoleEntry } from "../hooks";
-
-export interface Filters { platformId: number; genre: string; installed: boolean }
-export const NO_FILTERS: Filters = { platformId: 0, genre: "", installed: false };
-
-export const filtersActive = (f: Filters) => f.platformId !== 0 || f.genre !== "" || f.installed;
-
-const words = (s: string) => s.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim().split(" ").filter(Boolean);
-
-export function applyFilters(games: Game[], f: Filters, query: string): Game[] {
-  const terms = words(query);
-  if (!terms.length && !filtersActive(f)) return games;
-  return games.filter((g) => {
-    if (f.platformId && g.platform_id !== f.platformId) return false;
-    if (f.genre && !g.genres.includes(f.genre)) return false;
-    if (f.installed && g.status !== "installed") return false;
-    if (!terms.length) return true;
-    const name = ` ${words(g.name).join(" ")}`;
-    return terms.every((t) => name.includes(t));
-  });
-}
 
 let rememberedQuery = "";
 export const setRememberedQuery = (q: string) => { rememberedQuery = q; };

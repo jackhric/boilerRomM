@@ -1,7 +1,9 @@
 import { ButtonItem, Field, Navigation, PanelSection, PanelSectionRow, ProgressBarWithInfo, TextField } from "@decky/ui";
 import { useEffect, useState } from "react";
-import { clearSgdbKey, disconnect, STORE_ROUTE, setRomsDir, State } from "../../api";
-import { formatSize, useProgress } from "../../state";
+import { clearSgdbKey, disconnect, setRomsDir, State } from "../../api";
+import { useProgress } from "../../state";
+import { formatSize } from "../../domain/format";
+import { STORE_ROUTE } from "../../domain/routes";
 
 export function Home({ state }: { state: State }) {
   const progress = useProgress();

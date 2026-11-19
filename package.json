@@ -7,7 +7,8 @@
     "build": "vite build",
     "watch": "vite build --watch",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "check": "tsc --noEmit && vitest run && vite build"
   },
   "keywords": [
     "decky",

@@ -27,9 +27,3 @@ export function useProgress(): Record<number, Progress> {
   })), []);
   return progress;
 }
-
-export function formatSize(bytes: number): string {
-  if (bytes >= 1 << 30) return `${(bytes / (1 << 30)).toFixed(1)} GB`;
-  if (bytes >= 1 << 20) return `${Math.round(bytes / (1 << 20))} MB`;
-  return `${Math.max(1, Math.round(bytes / 1024))} KB`;
-}

@@ -3,9 +3,9 @@ import { Focusable, GamepadButton, GamepadEvent, ModalRoot, NavEntryPositionPref
 import { CSSProperties, ReactNode, RefObject, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { FaPlay } from "react-icons/fa";
-import { videoBroke, VideoSource } from "../hooks";
 import { Art, thumbsOf } from "./art";
 import { C, FONT, GAP, GUTTER } from "./tokens";
+import { videoBroke, VideoSource } from "./video";
 
 const START_AT = 0.25;
 const YT = "https://www.youtube-nocookie.com/embed/";

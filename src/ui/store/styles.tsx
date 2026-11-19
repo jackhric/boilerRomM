@@ -1,8 +1,7 @@
 import { CSSProperties, ReactNode } from "react";
 import { Game, Progress } from "../../api";
-import { formatSize } from "../../state";
 import { C, STORE_GLOW } from "../kit";
-import { isBusy, statusText } from "../hooks";
+import { statusText } from "../../domain/status";
 
 export const PAGE_BG = `${STORE_GLOW}, ${C.storePage}`;
 export const noop = () => {};
@@ -29,7 +28,6 @@ export function StatusTag({ game, progress, dark }: { game: Game; progress?: Pro
   if (game.status === "installed" && !dark) {
     return <div style={{ padding: "0 8px", height: 24, lineHeight: "24px", background: C.lime, color: C.ink, fontSize: 12, fontWeight: 700, letterSpacing: 0.3, whiteSpace: "nowrap" }}>ON THIS DEVICE</div>;
   }
-  const text = isBusy(game) ? statusText(game, progress) : game.status === "installed" ? "On this Device" : formatSize(game.size_bytes);
-  return <div style={{ padding: "0 10px", height: 28, lineHeight: "28px", borderRadius: 2, background: C.priceChip, color: "#fff", fontSize: 14, whiteSpace: "nowrap" }}>{text}</div>;
+  return <div style={{ padding: "0 10px", height: 28, lineHeight: "28px", borderRadius: 2, background: C.priceChip, color: "#fff", fontSize: 14, whiteSpace: "nowrap" }}>{statusText(game, progress)}</div>;
 }
 

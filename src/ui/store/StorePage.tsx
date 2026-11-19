@@ -3,14 +3,17 @@ import { FaEye } from "react-icons/fa";
 import { FC, useEffect, useRef, useState } from "react";
 import { Game, Progress } from "../../api";
 import { ActionButton, Art, C, IconButton, ConsoleBanner, FocusBackdrop, fitColumns, GUTTER, HeroArt, Logo, Page, PillTabs, showInBackdrop, TileGrid, usePageSize, WideArt } from "../kit";
-import { openGamePage, StoreModel, useReturnFocus, useStoreModel, useVideo, warmVideos, revealPageTop } from "../hooks";
-import { backdropOf, useGameDetails } from "./model";
 import { StoreProps } from "../pages";
 import { takeBrowseRequest } from "./browse";
 import { NativeTabRow, playTabSound } from "../../steam";
 import { Remember, SpotlightStyle } from "./catalog";
 import { SearchField, setRememberedQuery, useSearch } from "./filters";
 import { LibraryView, presetLibrary } from "./LibraryView";
+import { backdropOf, StoreModel } from "../../domain/catalog";
+import { useGameDetails } from "../game/details";
+import { revealPageTop, useReturnFocus } from "../kit/focus";
+import { useVideo, warmVideos } from "../kit/video";
+import { openGamePage, useStoreModel } from "./hooks";
 
 type Section = "discover" | "browse" | "rated" | "new" | "consoles";
 const SECTIONS: { key: Section; label: string }[] = [

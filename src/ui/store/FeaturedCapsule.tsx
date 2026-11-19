@@ -2,8 +2,10 @@ import { Focusable } from "@decky/ui";
 import { memo, useRef } from "react";
 import { Game, Progress } from "../../api";
 import { AmbientVideo, Art, backdropArt, C, CardBackdrop, TagChip, WideArt } from "../kit";
-import { reveal, scoreWord, VideoSource } from "../hooks";
 import { StatusTag } from "./styles";
+import { scoreWord } from "../../domain/format";
+import { reveal } from "../kit/focus";
+import { VideoSource } from "../kit/video";
 
 const HERO_W = 392;
 

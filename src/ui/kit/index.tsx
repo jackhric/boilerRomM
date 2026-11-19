@@ -3,12 +3,16 @@ import { Focusable, NavEntryPositionPreferences } from "@decky/ui";
 import { createContext, CSSProperties, memo, ReactNode, useContext, useLayoutEffect, useRef, useState } from "react";
 import { FaDownload, FaEllipsisH, FaPlay, FaStop } from "react-icons/fa";
 import { Game, Progress } from "../../api";
-import { formatSize } from "../../state";
-import { ConsoleEntry, isBusy, openConsolePage, reveal, useGameActions } from "../hooks";
 import { consoleLogo } from "../consoleLogos";
-import { coverOf, percent, prefetchDetails } from "../store/model";
 import { Art } from "./art";
 import { C, CAPSULE_W, FOOTER, GAP, GUTTER, KIT_CSS, WIDE_W } from "./tokens";
+import { ConsoleEntry, coverOf } from "../../domain/catalog";
+import { percent } from "../../domain/format";
+import { isBusy, statusText } from "../../domain/status";
+import { useGameActions } from "../game/actions";
+import { prefetchDetails } from "../game/details";
+import { reveal } from "./focus";
+import { openConsolePage } from "../store/hooks";
 
 export * from "./tokens";
 export * from "./media";
@@ -167,7 +171,7 @@ export const WideCapsule = memo(function WideCapsule({ game, progress, width = W
       <TileStatus game={game} progress={progress} />
       <div className="ctk-caption" style={{ display: "flex", alignItems: "center", gap: 8, height: 34, padding: "0 8px", boxSizing: "border-box" }}>
         <div style={{ flex: 1, minWidth: 0, fontSize: 14, ...ellipsis }}>{note || game.name}</div>
-        <div style={{ flex: "0 0 auto", fontSize: 12, color: C.body }}>{game.status === "installed" ? "Installed" : formatSize(game.size_bytes)}</div>
+        <div style={{ flex: "0 0 auto", fontSize: 12, color: C.body }}>{statusText(game, progress)}</div>
       </div>
     </Focusable>
   );

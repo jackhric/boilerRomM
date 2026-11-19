@@ -2,7 +2,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Game, GameDetails, Progress, Recommendation, similarGames } from "../../api";
 import { useBackendState, useProgress } from "../../state";
-import { backdropOf, Row as RowModel, similarRow, useDetailsState } from "../store/model";
+import { backdropOf, Row as RowModel, similarRow } from "../../domain/catalog";
+import { useDetailsState } from "./details";
 
 export interface GameData {
   game: Game;

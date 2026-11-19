@@ -1,11 +1,15 @@
 import { Focusable, NavEntryPositionPreferences } from "@decky/ui";
 import { CSSProperties, ReactNode, useCallback, useRef, useState, useEffect } from "react";
-import { formatSize } from "../../state";
 import { ActionButton, C, InfoBox, InfoRow, MediaSlides, MoreButton, Page, PageBackdrop, Shelf, Summary, TagChip, TileFocus, WideArt, WideCapsule } from "../kit";
 import { openBrowse } from "../store/browse";
-import { cardSelector, formatDate, formatHours, openGamePage, scoreWord, statusText, tagsOf, useReturnFocus, useVideo, holdPageTop } from "../hooks";
 import { GameProps } from "../pages";
 import { Heading, noop, PAGE_BG, SV_CSS } from "../store/styles";
+import { tagsOf } from "../../domain/catalog";
+import { formatDate, formatHours, formatSize, scoreWord } from "../../domain/format";
+import { statusText } from "../../domain/status";
+import { cardSelector, holdPageTop, useReturnFocus } from "../kit/focus";
+import { useVideo } from "../kit/video";
+import { openGamePage } from "../store/hooks";
 
 const GUTTER = 61;
 const BOX_BG: CSSProperties = { background: "rgba(14,20,27,.5)", height: "100%" };

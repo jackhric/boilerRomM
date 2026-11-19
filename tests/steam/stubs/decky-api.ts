@@ -15,3 +15,6 @@ export const routerHook = {
 /** What Decky does with a route: every patch for its path, in order. */
 export const applyRoutePatches = (path: string, route: any) => [...(patches.get(path) ?? [])].reduce((r, p) => p(r), route);
 export const toaster = { toast() {} };
+export const callable = () => async () => undefined;
+export const addEventListener = () => {};
+export const removeEventListener = () => {};

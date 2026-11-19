@@ -1,6 +1,6 @@
 // A request to open the store's Browse section already filtered, e.g. from a game page's "View more".
 import { Navigation } from "@decky/ui";
-import { STORE_ROUTE } from "../../api";
+import { STORE_ROUTE } from "../../domain/routes";
 
 export interface BrowseFilter {
   query?: string;

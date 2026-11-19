@@ -2,10 +2,8 @@
 // grid. Callers differ only in the pool, the order and what is fixed.
 import { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Game, Progress } from "../../api";
-import { ConsoleEntry, sortGames } from "../hooks";
-import { topRated } from "./model";
 import { Catalog, Remember } from "./catalog";
-import { applyFilters, Filters, NO_FILTERS } from "./filters";
+import { applyFilters, ConsoleEntry, Filters, NO_FILTERS, sortGames, topRated } from "../../domain/catalog";
 
 const PAGE = 84;
 

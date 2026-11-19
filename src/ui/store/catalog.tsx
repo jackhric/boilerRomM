@@ -2,9 +2,11 @@ import { Focusable } from "@decky/ui";
 import { ReactNode, useCallback, useMemo } from "react";
 import { Game, Progress } from "../../api";
 import { Button, C, Capsule, CAPSULE_W, fitColumns, GUTTER, showInBackdrop, TileGrid, usePageSize } from "../kit";
-import { cardSelector, openGamePage, sortGames, useSort } from "../hooks";
 import { FaSortAmountDown } from "react-icons/fa";
 import { FilterBar, FilterBarProps, ICON } from "./filters";
+import { sortGames } from "../../domain/catalog";
+import { cardSelector } from "../kit/focus";
+import { openGamePage, useSort } from "./hooks";
 
 
 const CSS = `
