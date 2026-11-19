@@ -1,6 +1,6 @@
 // Video and screenshots: the muted autoplaying trailer, the hero art it plays over, and the store's media slides.
 import { Focusable, GamepadButton, GamepadEvent, ModalRoot, NavEntryPositionPreferences, showModal } from "@decky/ui";
-import { CSSProperties, ReactNode, RefObject, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { CSSProperties, ReactNode, RefObject, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { FaPlay } from "react-icons/fa";
 import { Art, thumbsOf } from "./art";
@@ -188,6 +188,11 @@ export function AmbientVideo({ source, active, delayMs = 1200 }: { source?: Vide
   );
 }
 
+const HERO_FADE_MS = 500;
+const heroFade: CSSProperties = { transition: `opacity ${HERO_FADE_MS}ms ease-out` };
+// A slow, slight zoom towards a point picked anew for each picture.
+const driftPoint = () => `${20 + Math.round(Math.random() * 60)}% ${20 + Math.round(Math.random() * 60)}%`;
+
 interface HeroArtProps {
   src?: string;
   height: number;
@@ -206,15 +211,23 @@ interface HeroArtProps {
 
 /** Full-width hero art like the library game page's header: the image, Steam's top gradient, a fade into the page. */
 export function HeroArt({ src, height, video, playVideo = true, fadeTo, shadeLeft, drift, style, children }: HeroArtProps) {
-  // A slow, slight zoom towards a point picked anew for each picture.
-  const towards = useMemo(() => `${20 + Math.round(Math.random() * 60)}% ${20 + Math.round(Math.random() * 60)}%`, [src]);
+  // The picture before stays underneath while the new one fades in over it; without it the hero cuts to the page
+  // colour between two pictures.
+  const [layers, setLayers] = useState(() => [{ id: 0, src, towards: driftPoint() }]);
+  useEffect(() => {
+    setLayers((l) => (l[l.length - 1].src === src ? l : [...l.slice(-1), { id: l[l.length - 1].id + 1, src, towards: driftPoint() }]));
+    const t = setTimeout(() => setLayers((l) => (l.length > 1 ? l.slice(-1) : l)), HERO_FADE_MS + 1500);
+    return () => clearTimeout(t);
+  }, [src]);
   return (
     <div style={{ position: "relative", height, overflow: "hidden", background: C.ink, ...style }}>
-      <div key={drift ? src : undefined} className={drift ? "ctk-drift" : undefined} style={{ position: "absolute", inset: 0, transformOrigin: towards }}>
-        {/* The thumbnail shows at once; the full picture fades in over it. */}
-        {src && thumbsOf(src)[0] !== src && <Art src={src} small eager style={{ position: "absolute", inset: 0 }} />}
-        <Art src={src} bare eager style={{ position: "absolute", inset: 0 }} />
-      </div>
+      {layers.map((layer) => (
+        <div key={layer.id} className={drift ? "ctk-drift" : undefined} style={{ position: "absolute", inset: 0, transformOrigin: layer.towards }}>
+          {/* The thumbnail shows at once; the full picture fades in over it. */}
+          {layer.src && thumbsOf(layer.src)[0] !== layer.src && <Art src={layer.src} small bare eager style={{ position: "absolute", inset: 0 }} imgStyle={heroFade} />}
+          <Art src={layer.src} bare eager style={{ position: "absolute", inset: 0 }} imgStyle={heroFade} />
+        </div>
+      ))}
       <AmbientVideo source={video} active={playVideo} />
       <div style={{ position: "absolute", left: 0, right: 0, top: 0, height: 75, background: "linear-gradient(rgba(0,0,0,.5) 0%, rgba(0,0,0,0) 100%)" }} />
       <div style={{ position: "absolute", inset: 0, background: `linear-gradient(to bottom, transparent 55%, ${fadeTo} 100%)${shadeLeft ? ", linear-gradient(to right, rgba(0,0,0,.75) 0%, rgba(0,0,0,.45) 35%, transparent 70%)" : ""}` }} />

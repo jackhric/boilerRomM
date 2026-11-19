@@ -61,7 +61,8 @@ function FadeImage({ src, fadeMs, onShown, onFailed }: { src: string; fadeMs: nu
       el.onload = () => {
         if (!live) return;
         // A cached image can load before the first paint; without a computed starting point it would not fade.
-        void el.offsetWidth;
+        // A call, not a property read: the bundler drops `void el.offsetWidth` as having no effect.
+        el.getBoundingClientRect();
         el.style.opacity = "1";
         done = setTimeout(() => live && shown.current?.(), fadeMs + 100);
       };
