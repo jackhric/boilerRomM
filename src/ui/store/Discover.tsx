@@ -25,7 +25,9 @@ function Discover({ model, progress, remember }: DiscoverProps) {
     remembered(g, el);
   }, [remembered]);
   const featured = useMemo(() => model.featured.slice(SPOTLIGHT_PICKS), [model.featured]);
-  useEffect(() => warmVideos(featured), [featured]);
+  // Keyed by the ids: every backend event brings new game objects for the same picks.
+  const featuredIds = featured.map((g) => g.rom_id).join();
+  useEffect(() => warmVideos(featured), [featuredIds]);
   return (
     <>
       <style>{SV_CSS}</style>

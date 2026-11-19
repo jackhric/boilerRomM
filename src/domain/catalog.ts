@@ -129,22 +129,28 @@ export function rotate(best: Game[], seed: number): Game[] {
   return pool;
 }
 
-/** `seed` picks which of the better-rated games are featured. */
-export function storeModel(games: Game[], platforms: Platform[], recommended: Recommendation[], seed: number): StoreModel {
+/**
+ * `seed` picks which of the better-rated games are featured. `keep` is the featured ids of the model before this
+ * one: those stay, in order, so that art arriving for other games does not reshuffle what is on screen.
+ */
+export function storeModel(games: Game[], platforms: Platform[], recommended: Recommendation[], seed: number, keep: number[] = []): StoreModel {
   const later = laterRows(games);
   const counts = new Map<number, number>();
   for (const g of games) counts.set(g.platform_id, (counts.get(g.platform_id) ?? 0) + 1);
   const rated = topRated(games);
   const withArt = rated.filter((g) => g.art.hero);
+  const byId = new Map(games.map((g) => [g.rom_id, g]));
+  const kept = keep.map((id) => byId.get(id)).filter((g): g is Game => !!g);
+  const drawn = rotate(withArt.length >= 4 ? withArt : rated.length ? rated : games, seed).filter((g) => !keep.includes(g.rom_id));
   return {
     games,
     platforms,
-    byId: new Map(games.map((g) => [g.rom_id, g])),
+    byId,
     recent: recentRow(games),
     forYou: forYouRow(games, recommended),
     rated: later.find((r) => r.key === "rated"),
     installed: later.find((r) => r.key === "installed"),
-    featured: rotate(withArt.length >= 4 ? withArt : rated.length ? rated : games, seed).slice(0, FEATURED),
+    featured: [...kept, ...drawn].slice(0, FEATURED),
     consoles: platforms.filter((p) => counts.get(p.id)).map((p) => ({
       platform: p,
       count: counts.get(p.id) ?? 0,

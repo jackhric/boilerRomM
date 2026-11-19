@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { applyFilters, forYouRow, NO_FILTERS, rotate, sortGames, storeModel, tagsOf } from "../../src/domain/catalog";
-import { formatDate, formatHours, formatSize, percent, scoreWord } from "../../src/domain/format";
+import { formatAgo, formatDate, formatHours, formatSize, percent, scoreWord } from "../../src/domain/format";
 import { ACTION_LABELS, actionKind, canRemove, statusText } from "../../src/domain/status";
 import { game, rated } from "./fixtures";
 
@@ -32,6 +32,8 @@ describe("status", () => {
 describe("format", () => {
   it("sizes, dates, hours, scores and progress", () => {
     expect([formatSize(500), formatSize(5 << 20), formatSize(1.5 * (1 << 30))]).toEqual(["1 KB", "5 MB", "1.5 GB"]);
+    expect([0, 990, 700, 7300, 2 * 86400].map((t) => formatAgo(t, 1000))).toEqual(["never", "just now", "5 minutes ago", "just now", "just now"]);
+    expect([formatAgo(1000, 1060), formatAgo(1000, 4600), formatAgo(1000, 1000 + 2 * 86400)]).toEqual(["1 minute ago", "1 hour ago", "2 days ago"]);
     expect([formatDate("1998-06-29"), formatDate("")]).toEqual(["Jun 29, 1998", ""]);
     expect([formatHours(36000), formatHours(7.25), formatHours(0)]).toEqual(["10 hours", "7.3 hours", ""]);
     expect([scoreWord(96), scoreWord(80), scoreWord(10)]).toEqual(["Overwhelmingly Positive", "Very Positive", "Mostly Negative"]);
@@ -81,6 +83,16 @@ describe("catalog", () => {
     expect([m.forYou, m.installed]).toEqual([undefined, undefined]);
     expect(m.consoles).toEqual([{ platform: expect.objectContaining({ id: 1 }), count: 90, art: "hero1" }]);
     expect(storeModel([], [], [], 7).featured).toEqual([]);
+  });
+
+  it("keeps the featured picks it is given when art arrives for other games", () => {
+    const all = rated(90);
+    const few = all.map((g, i) => (i < 40 ? g : { ...g, art: { ...g.art, hero: "" } }));
+    const before = storeModel(few, [], [], 7).featured.map((g) => g.rom_id);
+    expect(storeModel(all, [], [], 7, before).featured.map((g) => g.rom_id)).toEqual(before);
+    const gone = storeModel(all.filter((g) => g.rom_id !== before[0]), [], [], 7, before).featured.map((g) => g.rom_id);
+    expect(gone.slice(0, 11)).toEqual(before.slice(1));
+    expect(new Set(gone).size).toBe(12);
   });
 
   it("turns RomM's recommendations into a row, skipping games the library no longer has", () => {

@@ -10,18 +10,23 @@ export const openConsolePage = (platformId: number) => Navigation.Navigate(conso
 // One draw lasts a visit (until the store has gone unused this long): coming back from a game page shows the same
 // picks, a later visit shows new ones.
 const ROTATION_MS = 20 * 60 * 1000;
-let rotation = { seed: 0, at: 0 };
+let rotation = { seed: 0, at: 0, picks: [] as number[] };
 
-function rotationSeed(): number {
+function currentRotation() {
   const now = Date.now();
   const fresh = !rotation.at || now - rotation.at > ROTATION_MS;
-  rotation = { seed: fresh ? (Math.random() * 2 ** 32) >>> 0 : rotation.seed, at: now };
-  return rotation.seed;
+  rotation = fresh ? { seed: (Math.random() * 2 ** 32) >>> 0, at: now, picks: [] } : { ...rotation, at: now };
+  return rotation;
 }
 
 export function useStoreModel(state: State): StoreModel {
   const { games, platforms, recommended } = state.library;
-  return useMemo(() => storeModel(games, platforms, recommended, rotationSeed()), [games, platforms, recommended]);
+  return useMemo(() => {
+    const { seed, picks } = currentRotation();
+    const model = storeModel(games, platforms, recommended, seed, picks);
+    rotation.picks = model.featured.map((g) => g.rom_id);
+    return model;
+  }, [games, platforms, recommended]);
 }
 
 let rememberedSort: SortKey = "name";
