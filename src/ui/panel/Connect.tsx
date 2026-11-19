@@ -1,6 +1,7 @@
 import { ButtonItem, Field, PanelSection, PanelSectionRow, TextField } from "@decky/ui";
 import { useEffect, useState } from "react";
 import { cancelPairing, setServer, startPairing, State } from "../../api";
+import { QrCode } from "../kit/qr";
 
 export function Connect({ state }: { state: State }) {
   const [url, setUrl] = useState(state.server.url);
@@ -22,13 +23,23 @@ export function Connect({ state }: { state: State }) {
   if (pairing.status === "waiting") {
     return (
       <PanelSection title="Pair with RomM">
+        {pairing.verification_url && (
+          <PanelSectionRow>
+            <div style={{ padding: "16px 0" }}>
+              <QrCode value={pairing.verification_url} size={200} />
+            </div>
+          </PanelSectionRow>
+        )}
         <PanelSectionRow>
-          <div style={{ textAlign: "center", fontSize: "2.2em", letterSpacing: "0.15em", fontWeight: 700, padding: "8px 0" }}>
+          <Field description="Scan with your phone, sign in to RomM and approve this device." />
+        </PanelSectionRow>
+        <PanelSectionRow>
+          <div style={{ textAlign: "center", fontSize: "1.6em", letterSpacing: "0.15em", fontWeight: 700, padding: "4px 0" }}>
             {pairing.user_code?.replace(/^(.{4})(.+)$/, "$1 $2")}
           </div>
         </PanelSectionRow>
         <PanelSectionRow>
-          <Field description={<>Open <b>{pairing.verification_url?.replace(/^https?:\/\//, "").replace(/\?.*$/, "")}</b> on your phone or PC, sign in and enter this code.</>} />
+          <Field description={<>No camera? Open <b>{pairing.verification_url?.replace(/^https?:\/\//, "").replace(/\?.*$/, "")}</b> in any browser and enter this code.</>} />
         </PanelSectionRow>
         <PanelSectionRow>
           <ButtonItem layout="below" disabled={busy} onClick={() => run(cancelPairing)}>Cancel</ButtonItem>
@@ -60,7 +71,7 @@ export function Connect({ state }: { state: State }) {
       )}
       {serverOk && (
         <PanelSectionRow>
-          <ButtonItem layout="below" disabled={busy} onClick={() => run(startPairing)} description={pairingNote || "Shows a code to approve in RomM's web UI; no password is typed on the device."}>
+          <ButtonItem layout="below" disabled={busy} onClick={() => run(startPairing)} description={pairingNote || "Shows a QR code to scan and approve in RomM's web UI; no password is typed on the device."}>
             Pair this device
           </ButtonItem>
         </PanelSectionRow>

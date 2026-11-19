@@ -17,6 +17,9 @@ importers:
       tslib:
         specifier: ^2.7.0
         version: 2.7.0
+      uqr:
+        specifier: 0.1.2
+        version: 0.1.2
     devDependencies:
       '@decky/ui':
         specifier: ^4.11.0
@@ -395,6 +398,9 @@ packages:
     engines: {node: '>=14.17'}
     hasBin: true
 
+  uqr@0.1.2:
+    resolution: {integrity: sha512-MJu7ypHq6QasgF5YRTjqscSzQp/W11zoUk6kvmlH+fmWEs63Y0Eib13hYFwAzagRJcVY8WVnlV+eBDUGMJ5IbA==}
+
   vite@8.3.6:
     resolution: {integrity: sha512-UI7dK29NnS54Fk+mmo7o+jI6U8Fp7hDl+X5Q1k45WH+d4dSlbLVUETGQ+hfkNgvLQGyoElPj837nZyv4MBc0VA==}
     engines: {node: ^20.19.0 || >=22.12.0}
@@ -753,6 +759,8 @@ snapshots:
   tslib@2.7.0: {}
 
   typescript@5.6.2: {}
+
+  uqr@0.1.2: {}
 
   vite@8.3.6(terser@5.34.0):
     dependencies:
