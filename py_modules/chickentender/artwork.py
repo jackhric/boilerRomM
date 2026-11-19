@@ -12,6 +12,7 @@ import tempfile
 import time
 from collections.abc import Callable, Iterable
 
+from . import jsonfile
 from .sgdb import KINDS, SgdbClient, SgdbError, title_key
 
 EMPTY = {k: "" for k in KINDS}
@@ -61,18 +62,7 @@ class ArtCache:
     def save(self) -> None:
         if not self._dirty:
             return
-        os.makedirs(self.root, exist_ok=True)
-        fd, tmp = tempfile.mkstemp(dir=self.root, prefix=".index-")
-        try:
-            with os.fdopen(fd, "w", encoding="utf-8") as f:
-                json.dump({str(k): v for k, v in self._index.items()}, f)
-            os.replace(tmp, self.index_path)
-        except BaseException:
-            try:
-                os.unlink(tmp)
-            except OSError:
-                pass
-            raise
+        jsonfile.write(self.index_path, {str(k): v for k, v in self._index.items()}, indent=None)
         self._dirty = False
 
     def _image_dir(self, sgdb_id: int) -> str:

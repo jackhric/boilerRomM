@@ -16,9 +16,10 @@ Every change is written to disk before it is reported, as a whole file swapped i
 import json
 import logging
 import os
-import tempfile
 import time
 from dataclasses import asdict, dataclass, field, fields
+
+from . import jsonfile
 
 VERSION = 1
 QUEUED, DOWNLOADING, PAUSED, INCOMPLETE, FAILED, INSTALLED = "queued", "downloading", "paused", "incomplete", "failed", "installed"
@@ -118,23 +119,8 @@ class Ledger:
             self._installs = {}
 
     def _save(self) -> None:
-        if not self.path:
-            return
-        folder = os.path.dirname(self.path)
-        os.makedirs(folder, exist_ok=True)
-        fd, tmp = tempfile.mkstemp(dir=folder, prefix=".installs-")
-        try:
-            with os.fdopen(fd, "w", encoding="utf-8") as f:
-                json.dump({"version": VERSION, "installs": [asdict(i) for i in self._installs.values()]}, f, indent=1)
-                f.flush()
-                os.fsync(f.fileno())
-            os.replace(tmp, self.path)
-        except BaseException:
-            try:
-                os.unlink(tmp)
-            except OSError:
-                pass
-            raise
+        if self.path:
+            jsonfile.write(self.path, {"version": VERSION, "installs": [asdict(i) for i in self._installs.values()]}, indent=1, durable=True)
 
     def get(self, rom_id: int) -> Install | None:
         return self._installs.get(int(rom_id))

@@ -1,7 +1,7 @@
 import json
-import os
-import tempfile
 from dataclasses import asdict, dataclass, field, fields
+
+from . import jsonfile
 
 
 @dataclass
@@ -35,16 +35,4 @@ class SettingsStore:
         return Settings(**{k: v for k, v in data.items() if k in known})
 
     def save(self, settings: Settings) -> None:
-        os.makedirs(os.path.dirname(self.path), exist_ok=True)
-        fd, tmp = tempfile.mkstemp(dir=os.path.dirname(self.path), prefix=".settings-")
-        try:
-            with os.fdopen(fd, "w", encoding="utf-8") as f:
-                json.dump(asdict(settings), f, indent=2)
-            os.chmod(tmp, 0o600)
-            os.replace(tmp, self.path)
-        except BaseException:
-            try:
-                os.unlink(tmp)
-            except OSError:
-                pass
-            raise
+        jsonfile.write(self.path, asdict(settings), private=True)

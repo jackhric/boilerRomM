@@ -1,7 +1,7 @@
 """Which Steam shortcut belongs to which game. Steam creates shortcuts (frontend only); this remembers the appids."""
 import json
-import os
-import tempfile
+
+from . import jsonfile
 
 
 class ShortcutMap:
@@ -35,8 +35,4 @@ class ShortcutMap:
         return appid
 
     def _save(self) -> None:
-        os.makedirs(os.path.dirname(self.path), exist_ok=True)
-        fd, tmp = tempfile.mkstemp(dir=os.path.dirname(self.path), prefix=".shortcuts-")
-        with os.fdopen(fd, "w", encoding="utf-8") as f:
-            json.dump({str(k): v for k, v in self._by_rom.items()}, f, indent=2)
-        os.replace(tmp, self.path)
+        jsonfile.write(self.path, {str(k): v for k, v in self._by_rom.items()})
