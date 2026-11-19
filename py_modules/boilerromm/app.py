@@ -8,7 +8,10 @@ import base64
 import hashlib
 import logging
 import os
+import shlex
 import socket
+import tempfile
+import time
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from typing import Any
@@ -18,11 +21,12 @@ import aiohttp
 from .artwork import ArtCache, ArtPrefetch
 from . import ledger as L
 from .downloads import Downloader, Job, as_game, manifest
-from .install import DEFAULT_ROMS_DIR, InstallLocation, Target, launch_file
+from .install import ROMS_FOLDER, InstallLocation, Target
 from .ledger import Install, Ledger
 from .library import Library
 from .pairing import DevicePairing
-from . import retrodeck
+from . import emulators
+from .progress import Counted
 from .shortcuts import ShortcutMap
 import shutil
 from .romm import MIN_VERSION, RommClient, RommError, normalize_url, parse_version, ssl_context
@@ -64,7 +68,8 @@ class Held:
 class App:
     def __init__(self, settings_path: str, version: str, home: str,
                  emit: Callable[..., Awaitable[None]], logger: logging.Logger, data_dir: str = "",
-                 sgdb_session_factory: Callable[[], Any] | None = None, browser: dict | None = None):
+                 sgdb_session_factory: Callable[[], Any] | None = None, browser: dict | None = None,
+                 release_session_factory: Callable[[], Any] | None = None):
         self.store = SettingsStore(settings_path)
         self.settings: Settings = self.store.load()
         self.version = version
@@ -77,12 +82,23 @@ class App:
         self.server: dict[str, Any] = {"version": "", "error": ""}
         self.library = Library()
         self.videos = VideoResolver(log=logger)
-        self.retrodeck = retrodeck.detect(home)
         self.shortcuts = ShortcutMap(os.path.join(os.path.dirname(settings_path), "shortcuts.json"))
         self.ledger = Ledger(os.path.join(os.path.dirname(settings_path), "installs.json"), logger)
         self.launcher = ""
         self.runtime_dir = ""
-        self.location = InstallLocation(self.settings.roms_dir or self.retrodeck.roms_path or DEFAULT_ROMS_DIR, home)
+        self.data_dir = data_dir or os.path.dirname(settings_path)
+        self.location = InstallLocation(self.settings.roms_dir or self.default_roms_dir, home)
+        self.emulators = {cls.id: cls(emulators.Layout(self.data_dir)) for cls in emulators.ALL}
+        self._emulator_busy: dict[str, str] = {}
+        self._emulator_error: dict[str, str] = {}
+        self._emulator_versions: dict[str, tuple[float, list[dict]]] = {}
+        self._emulator_progress: dict[str, tuple[int, int]] = {}
+        self._bios_fetching: set[str] = set()
+        self._progress_sent = 0.0
+        self._install_all: asyncio.Task | None = None
+        # No total timeout: a build is tens of megabytes on whatever connection the device has.
+        self._release_session = release_session_factory or (lambda: aiohttp.ClientSession(
+            timeout=aiohttp.ClientTimeout(total=None, sock_connect=30, sock_read=60), connector=aiohttp.TCPConnector(ssl=ssl_context())))
         self.downloader: Downloader | None = None
         self._refresh_task: asyncio.Task | None = None
         if self.settings.server_url:
@@ -118,6 +134,8 @@ class App:
     async def stop(self) -> None:
         if self._refresh_task:
             self._refresh_task.cancel()
+        if self._install_all:
+            self._install_all.cancel()
         if self.signin.active:
             await self.signin.cancel()
         await self.prefetch.stop()
@@ -151,7 +169,11 @@ class App:
             "installs": self.installs(held),
             "installed": self.installed(held),
             "roms_dir_exists": self.location.exists,
-            "retrodeck": self.retrodeck.as_dict(),
+            "storage": self.storage(held),
+            "emulators": [{**e.status(), "busy": self._emulator_busy.get(e.id, ""), "error": self._emulator_error.get(e.id, ""),
+                           "progress": self._emulator_progress.get(e.id)}
+                          for e in self.emulators.values()],
+            "setup_done": self.settings.setup_done,
             "sgdb": {"configured": self.sgdb is not None, "error": self.sgdb_error,
                      "art_ready": self.art.count(self.library.games.values()), "art_total": len(self.library.games),
                      "signin": self.signin.as_dict()},
@@ -183,6 +205,19 @@ class App:
                  "error": h.install.error, "queued_at": h.install.queued_at, "updated_at": h.install.updated_at,
                  "completed_at": h.install.completed_at}
                 for h in (self.held() if held is None else held).values()]
+
+    def storage(self, held: dict[int, "Held"] | None = None) -> dict:
+        """What the ROM folder's drive has: bytes taken by installed games, and the drive's free and total bytes."""
+        used = sum(h.seen.done_bytes for h in (self.held() if held is None else held).values() if h.state == L.INSTALLED)
+        # The folder is only made when the first game downloads; its drive is the nearest folder that exists.
+        path = self.location.roms_dir
+        while path and not os.path.exists(path) and os.path.dirname(path) != path:
+            path = os.path.dirname(path)
+        try:
+            usage = shutil.disk_usage(path)
+        except OSError:
+            return {"used_bytes": used, "free_bytes": 0, "total_bytes": 0}
+        return {"used_bytes": used, "free_bytes": usage.free, "total_bytes": usage.total}
 
     def installed(self, held: dict[int, "Held"] | None = None) -> list[dict]:
         """Complete games that have a Steam shortcut, with what Steam's storage pages show for an installed app."""
@@ -240,6 +275,150 @@ class App:
         self._changed()
         return self.state()
 
+    # Emulators
+    async def _emulator_task(self, emulator_id: str, doing: str, work: Callable[[emulators.Emulator], Awaitable[None]]) -> dict:
+        emulator = self.emulators.get(emulator_id)
+        if not emulator:
+            raise ValueError("Unknown emulator")
+        if self._emulator_busy.get(emulator_id):
+            return self.state()
+        self._emulator_busy[emulator_id] = doing
+        self._emulator_error.pop(emulator_id, None)
+        self._changed()
+        try:
+            await work(emulator)
+        except Exception as e:
+            self.log.warning("%s %s failed: %s", doing, emulator_id, e)
+            self._emulator_error[emulator_id] = str(e) or type(e).__name__
+        finally:
+            self._emulator_busy.pop(emulator_id, None)
+        self._changed()
+        return self.state()
+
+    async def emulator_versions(self, emulator_id: str) -> list[dict]:
+        """The builds on offer, asked from the project at most every ten minutes (GitHub limits anonymous requests)."""
+        emulator = self.emulators.get(emulator_id)
+        if not emulator:
+            raise ValueError("Unknown emulator")
+        cached = self._emulator_versions.get(emulator_id)
+        if cached and time.monotonic() - cached[0] < 600:
+            return cached[1]
+        async with self._release_session() as session:
+            listed = await emulator.versions(session)
+        self._emulator_versions[emulator_id] = (time.monotonic(), listed)
+        return listed
+
+    def _downloaded(self, emulator_id: str, done: int, total: int) -> None:
+        self._emulator_progress[emulator_id] = (done, total)
+        # A download reports every chunk; the screen needs a few updates a second.
+        if time.monotonic() - self._progress_sent > 0.3:
+            self._progress_sent = time.monotonic()
+            self._changed()
+
+    async def emulator_install(self, emulator_id: str, tag: str = "") -> dict:
+        async def work(emulator: emulators.Emulator) -> None:
+            try:
+                async with self._release_session() as session:
+                    await emulator.install(Counted(session, lambda done, total: self._downloaded(emulator.id, done, total)), tag)
+                emulator.prepare()
+            finally:
+                self._emulator_progress.pop(emulator.id, None)
+            await self._auto_bios(emulator)
+        return await self._emulator_task(emulator_id, "installing", work)
+
+    async def emulators_install_all(self) -> dict:
+        """Installs every emulator that is not installed, one after another, in the background. Each stands alone:
+        one that fails is reported on its own row and the rest carry on."""
+        waiting = [e.id for e in self.emulators.values() if not e.version and not self._emulator_busy.get(e.id)]
+        for emulator_id in waiting:
+            self._emulator_busy[emulator_id] = "queued"
+            self._emulator_error.pop(emulator_id, None)
+        if waiting:
+            previous = self._install_all
+            self._install_all = asyncio.create_task(self._install_queued(waiting, previous))
+        self._changed()
+        return self.state()
+
+    async def _install_queued(self, waiting: list[str], previous: asyncio.Task | None) -> None:
+        try:
+            if previous:
+                await asyncio.gather(previous, return_exceptions=True)
+            for emulator_id in waiting:
+                self._emulator_busy.pop(emulator_id, None)
+                await self.emulator_install(emulator_id)
+        finally:
+            for emulator_id in waiting:
+                if self._emulator_busy.get(emulator_id) == "queued":
+                    self._emulator_busy.pop(emulator_id, None)
+
+    async def finish_setup(self) -> dict:
+        self.settings.setup_done = True
+        self.store.save(self.settings)
+        self._changed()
+        return self.state()
+
+    async def emulator_uninstall(self, emulator_id: str) -> dict:
+        async def work(emulator: emulators.Emulator) -> None:
+            emulator.uninstall()
+        return await self._emulator_task(emulator_id, "uninstalling", work)
+
+    async def emulator_reset(self, emulator_id: str) -> dict:
+        async def work(emulator: emulators.Emulator) -> None:
+            emulator.reset_config()
+        return await self._emulator_task(emulator_id, "resetting", work)
+
+    async def rescan_bios(self) -> dict:
+        self._changed()
+        return self.state()
+
+    async def _fetch_bios(self, emulator: emulators.Emulator) -> tuple[int, int]:
+        """Downloads the firmware RomM holds for the emulator's platforms: (kept, listed). Each file goes through the
+        emulator's own check, so only what it recognises is kept, and a file that fails the check is not."""
+        if not self.client or not self.settings.paired:
+            raise RuntimeError("Connect to RomM first")
+        ids = {p["fs_slug"]: p["id"] for p in await self.client.platforms()}
+        kept, listed = 0, 0
+        with tempfile.TemporaryDirectory(dir=self.data_dir if os.path.isdir(self.data_dir) else None) as scratch:
+            for platform in emulator.bios_platforms():
+                if platform not in ids:
+                    continue
+                for entry in await self.client.firmware(ids[platform]):
+                    listed += 1
+                    path = os.path.join(scratch, os.path.basename(entry["file_name"]))
+                    await self.client.fetch_firmware(entry["id"], entry["file_name"], path)
+                    if emulator.add_firmware(path):
+                        kept += 1
+                    os.unlink(path)
+        return kept, listed
+
+    async def emulator_bios_from_romm(self, emulator_id: str) -> dict:
+        async def work(emulator: emulators.Emulator) -> None:
+            kept, listed = await self._fetch_bios(emulator)
+            if not kept:
+                raise RuntimeError("RomM has no firmware for this emulator" if not listed else "None of RomM's files are ones it can use")
+        return await self._emulator_task(emulator_id, "fetching", work)
+
+    def _bios_missing(self, emulator: emulators.Emulator, slug: str = "") -> bool:
+        """Whether the emulator lacks firmware it cannot run without: for `slug`'s games, or for any of its platforms."""
+        needed = [p for p in emulator.bios_platforms() if not slug or p == slug]
+        return any(not emulator.platform_ready(p) for p in needed)
+
+    async def _auto_bios(self, emulator: emulators.Emulator, slug: str = "") -> None:
+        """Gets missing firmware from RomM without being asked. Quiet: RomM not having it is not an error here, the
+        BIOS page and the launch check say what is missing."""
+        if emulator.id in self._bios_fetching or not self.settings.paired or not self._bios_missing(emulator, slug):
+            return
+        self._bios_fetching.add(emulator.id)
+        try:
+            kept, _ = await self._fetch_bios(emulator)
+            if kept:
+                self.log.info("%s: %d firmware files from RomM", emulator.name, kept)
+        except Exception as e:
+            self.log.warning("firmware for %s was not fetched: %s", emulator.name, e)
+        finally:
+            self._bios_fetching.discard(emulator.id)
+        self._changed()
+
     def _changed(self) -> None:
         asyncio.get_event_loop().create_task(self._emit(STATE_EVENT, self.state()))
 
@@ -251,32 +430,100 @@ class App:
             self.log.warning("download of %s failed: %s", job.game.name, job.error)
         self._changed()
 
+    @property
+    def default_roms_dir(self) -> str:
+        return os.path.join(self.data_dir, ROMS_FOLDER)
+
+    def emulator_for(self, slug: str) -> emulators.Emulator | None:
+        """The emulator that runs a platform's games; None when boilerRomM has none for it."""
+        return next((e for e in self.emulators.values() if slug in e.platforms), None)
+
+    def launch_script(self, rom_id: int) -> str:
+        return os.path.join(self.runtime_dir, "launch", f"{int(rom_id)}.sh") if self.runtime_dir else ""
+
+    def write_launch_script(self, slug: str, rom_id: int, target: Target) -> None:
+        """Writes what the launcher runs for a game. A Steam shortcut carries only the game's id, so the emulator,
+        its version and the ROM folder can all change without the shortcut going stale."""
+        path = self.launch_script(rom_id)
+        if not path:
+            return
+        emulator = self.emulator_for(slug)
+        if not emulator:
+            lines = [f"echo {shlex.quote(f'boilerRomM has no emulator for {slug} games')} >&2", "exit 1"]
+        elif not emulator.version:
+            lines = [f"echo {shlex.quote(f'{emulator.name} is not installed: install it in boilerRomM settings')} >&2", "exit 1"]
+        else:
+            emulator.prepare()
+            command = emulator.command(emulator.launch_file(target), slug)
+            # Steam lists a game while it downloads, so Play can be pressed before the files are whole.
+            lines = [f"rom={shlex.quote(target.path)}",
+                     'if [[ -e "$rom.part" ]] || { [[ -d "$rom" ]] && compgen -G "$rom/*.part" >/dev/null; }; then',
+                     '  echo "boilerRomM: $rom is still downloading" >&2; exit 1',
+                     "fi",
+                     'if [[ ! -e "$rom" ]]; then echo "boilerRomM: $rom is not on this device" >&2; exit 1; fi']
+            lines += [f"export {key}={shlex.quote(value)}" for key, value in command.env.items()]
+            lines.append("exec " + " ".join(shlex.quote(arg) for arg in command.argv))
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w", encoding="utf-8") as f:
+            f.write("#!/bin/bash\n" + "\n".join(lines) + "\n")
+        os.chmod(path, 0o755)
+
     def launch_target(self, rom_id: int) -> dict:
-        """What a Steam shortcut for this game runs: the launcher with the ES-DE system and the ROM path."""
+        """What a Steam shortcut for this game runs: the launcher with the game's id."""
         game = self.library.games.get(int(rom_id))
         if not game:
             raise ValueError("Unknown game")
         target = self.location.target(game.slug, game.fs_name, game.single_file)
-        system = os.path.basename(self.location.platform_dir(game.slug))
+        self.write_launch_script(game.slug, game.rom_id, target)
         return {
             "rom_id": game.rom_id, "name": game.name, "appid": self.shortcuts.appid(game.rom_id),
             "exe": self.launcher or "/usr/bin/false", "start_dir": os.path.dirname(target.path),
-            "launch_options": f'{system} "{launch_file(target)}"', "cover": game.cover_large or game.cover,
-            "installed": target.installed,
+            "launch_options": str(game.rom_id), "cover": game.cover_large or game.cover,
+            "installed": target.installed, "blocked": self._blocked(game.slug, game.platform),
         }
+
+    def _blocked(self, slug: str, platform: str) -> str:
+        """Why a game of this platform cannot start; "" when it can."""
+        emulator = self.emulator_for(slug)
+        if not emulator:
+            return f"boilerRomM has no emulator for {platform}."
+        if not emulator.version:
+            return f"{emulator.name} is not installed. Install it in Settings, under Emulators."
+        if self._bios_missing(emulator, slug):
+            return f"{emulator.name} needs {emulator.requires}, and RomM did not have one. Add it in Settings, under BIOS."
+        return ""
+
+    async def play_target(self, rom_id: int) -> dict:
+        """`launch_target` for a game about to be started, after one more try at getting missing firmware."""
+        game = self.library.games.get(int(rom_id))
+        if not game:
+            raise ValueError("Unknown game")
+        emulator = self.emulator_for(game.slug)
+        if emulator and emulator.version:
+            await self._auto_bios(emulator, game.slug)
+        return self.launch_target(rom_id)
 
     # Server and pairing
     async def set_server(self, url: str) -> dict:
-        url = normalize_url(url)
-        if not url:
+        typed = url.strip().rstrip("/")
+        if not typed:
             raise ValueError("Enter the RomM server address")
         if self.pairing:
             await self.pairing.cancel()
             self.pairing = None
-        if self.client:
-            await self.client.close()
-        self.client = RommClient(url)
-        await self._probe_server(emit=False)
+        # An address typed without a protocol is tried over https, then over http if nothing there is RomM.
+        candidates = [typed] if "://" in typed else [f"https://{typed}", f"http://{typed}"]
+        for url in candidates:
+            if self.client:
+                await self.client.close()
+            self.client = RommClient(url)
+            await self._probe_server(emit=False)
+            if self.server["version"]:
+                break
+        if not self.server["version"]:
+            url = normalize_url(typed)
+            if len(candidates) > 1:
+                self.server["error"] = f"Nothing answered at {typed}"
         if self.settings.server_url != url:
             await self.prefetch.stop()
             self.settings = self.settings.for_server(url)
@@ -300,6 +547,28 @@ class App:
             self.server["error"] = f"Cannot reach {self.client.base_url}: {e}"
         if emit:
             self._changed()
+
+    async def check_connection(self) -> dict:
+        """Asks the server now: does it answer, which version, and does it still accept this device's token."""
+        result = {"reachable": False, "version": "", "supported": False, "signed_in": False, "username": "", "ms": 0, "error": ""}
+        if not self.client:
+            result["error"] = "No server is set"
+            return result
+        started = time.monotonic()
+        await self._probe_server(emit=False)
+        result["ms"] = round((time.monotonic() - started) * 1000)
+        version = self.server["version"]
+        result.update(reachable=bool(version), version=version, supported=bool(version) and not self.server["error"], error=self.server["error"])
+        if version and self.settings.paired:
+            try:
+                me = await self.client.me()
+                result.update(signed_in=True, username=(me or {}).get("username", ""))
+            except RommError as e:
+                result["error"] = "RomM no longer accepts this device; disconnect and pair again" if e.status in (401, 403) else f"RomM answered {e.status}"
+            except Exception as e:
+                result["error"] = str(e) or type(e).__name__
+        self._changed()
+        return result
 
     async def start_pairing(self) -> dict:
         if not self.client or self.server.get("error"):
@@ -360,6 +629,25 @@ class App:
         self.library = Library()
         self._changed()
         return self.state()
+
+    async def reset(self) -> dict:
+        """Back to a fresh install, so setup runs again. Downloaded games and their saves stay on the device."""
+        if self._install_all:
+            self._install_all.cancel()
+            self._install_all = None
+        if self.signin.active:
+            await self.signin.cancel()
+        await self.clear_sgdb_key()
+        self.art.clear()
+        for emulator in self.emulators.values():
+            try:
+                emulator.uninstall(keep_settings=False)
+            except OSError as e:
+                self.log.warning("%s was not removed: %s", emulator.name, e)
+        self._emulator_busy.clear()
+        self._emulator_error.clear()
+        self._emulator_progress.clear()
+        return await self.disconnect()
 
     # Library and downloads
     async def refresh_library(self) -> dict:
@@ -549,10 +837,17 @@ class App:
         if not game or not self.downloader:
             raise ValueError("Unknown game")
         if not self.location.exists:
-            raise ValueError(f"The ROM folder {self.location.roms_dir} does not exist")
+            # Only our own folder is made: a chosen one that is missing is likely a drive that is not there.
+            if self.location.roms_dir != self.default_roms_dir:
+                raise ValueError(f"The ROM folder {self.location.roms_dir} does not exist")
+            os.makedirs(self.location.roms_dir, exist_ok=True)
         if appid:
             self.shortcuts.set(game.rom_id, int(appid), game.name)
         self.downloader.add(game, self.shortcuts.appid(game.rom_id))
+        emulator = self.emulator_for(game.slug)
+        if emulator:
+            # In the background: by the time the game is on the device, so is what its emulator needs.
+            self._bios_task = asyncio.create_task(self._auto_bios(emulator, game.slug))
         self._changed()
         return self.state()
 
@@ -629,9 +924,7 @@ class App:
         return self.state()
 
     async def set_roms_dir(self, path: str) -> dict:
-        path = path.strip()
-        self.retrodeck = retrodeck.detect(self.home)
-        path = path or self.retrodeck.roms_path or DEFAULT_ROMS_DIR
+        path = path.strip() or self.default_roms_dir
         self.location = InstallLocation(path, self.home)
         if self.downloader:
             self.downloader.location = self.location

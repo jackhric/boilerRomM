@@ -1,9 +1,9 @@
 """Sign in with Steam: fetches the user's SteamGridDB API key through Steam's own browser.
 
-The frontend opens SteamGridDB's home page (`/externalweb`); this task follows that page over CDP and calls
-SteamGridDB's JSON API from inside it, so the request carries the page's session cookie. Logged out, it sends the
-page to Steam's OpenID login and waits for the user to press Sign In there. The key goes only to `submit`: never
-into the state, a log line or an error.
+The frontend opens Steam's OpenID login for SteamGridDB (`/externalweb`); this task follows that page over CDP. Once
+the user presses Sign In there and the page is back on SteamGridDB, it calls SteamGridDB's JSON API from inside the
+page, so the request carries the page's session cookie. A page that is on SteamGridDB but logged out is sent to the
+login. The key goes only to `submit`: never into the state, a log line or an error.
 """
 import asyncio
 import logging
@@ -185,6 +185,8 @@ class SgdbSignin:
         where = _where(page.get("url", ""))
         if where == "consent":
             self._set("consent")
+            # A sign-in is under way: when the page comes back, give SteamGridDB a moment before sending it again.
+            self._last_login = self._clock()
             return False
         if where not in ("sgdb", "callback"):
             return False
@@ -192,7 +194,9 @@ class SgdbSignin:
         if not isinstance(prefs, dict):
             return False
         if not prefs.get("loggedIn"):
-            if where == "callback" or prefs.get("status") not in (200, 401, 403):
+            # SteamGridDB answers a visitor who is not signed in with 401 or 403, or with a plain 500.
+            status = prefs.get("status")
+            if where == "callback" or not (status in (200, 401, 403) or isinstance(status, int) and status >= 500):
                 return False
             if self._logins >= MAX_LOGINS:
                 self._set("failed", "SteamGridDB did not sign you in")

@@ -33,3 +33,14 @@ export function scoreWord(score: number): string {
   if (score >= 40) return "Mixed";
   return "Mostly Negative";
 }
+
+/** "just now", "5 minutes ago", "2 hours ago"; "never" for 0. Both times are in seconds. */
+export function formatAgo(then: number, now: number): string {
+  if (!then) return "never";
+  const s = Math.max(0, now - then);
+  if (s < 60) return "just now";
+  const unit = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"} ago`;
+  if (s < 3600) return unit(Math.floor(s / 60), "minute");
+  if (s < 86400) return unit(Math.floor(s / 3600), "hour");
+  return unit(Math.floor(s / 86400), "day");
+}

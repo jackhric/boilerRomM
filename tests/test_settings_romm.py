@@ -33,7 +33,7 @@ def test_signing_out_keeps_every_setting_that_is_about_the_device(tmp_path):
 
     from boilerromm.settings import Settings, SettingsStore
 
-    account = {"server_url", "token", "device_id", "username", "scopes"}
+    account = {"server_url", "token", "device_id", "username", "scopes", "setup_done"}
     full = Settings(**{f.name: (["x"] if f.name == "scopes" else f"{f.name}-value") for f in fields(Settings)})
     out = full.signed_out()
     assert not out.paired

@@ -140,6 +140,20 @@ class RommClient:
             if len(items) >= page.get("total", 0) or not page["items"]:
                 return items
 
+    async def firmware(self, platform_id: int) -> list[dict]:
+        """The firmware files RomM holds for a platform: [{id, file_name, file_size_bytes, md5_hash, ...}]."""
+        return await self.request("GET", "/api/firmware", params={"platform_id": platform_id})
+
+    async def fetch_firmware(self, firmware_id: int, file_name: str, dest: str) -> None:
+        headers = {"Authorization": f"Bearer {self.token}"}
+        url = self.base_url + f"/api/firmware/{firmware_id}/content/{quote(file_name)}"
+        async with self._get_session().get(url, headers=headers, timeout=aiohttp.ClientTimeout(total=None, sock_read=60)) as r:
+            if r.status >= 400:
+                raise RommError(r.status, (await r.text())[:200], url)
+            with open(dest, "wb") as out:
+                async for chunk in r.content.iter_chunked(1 << 20):
+                    out.write(chunk)
+
     async def fetch_bytes(self, url: str, max_bytes: int = 8 << 20) -> tuple[bytes, str]:
         """A small public asset (a cover) and its content type."""
         async with self._get_session().get(self.url(url)) as r:

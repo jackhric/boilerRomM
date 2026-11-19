@@ -13,10 +13,12 @@ class Settings:
     scopes: list[str] = field(default_factory=list)
     roms_dir: str = ""
     sgdb_key: str = ""
+    setup_done: bool = False
 
     def for_server(self, url: str) -> "Settings":
-        """These settings pointed at another RomM server: signed out, everything about the device kept."""
-        return replace(self, server_url=url, token="", device_id="", username="", scopes=[])
+        """These settings pointed at another RomM server: signed out, so setup runs again; everything about the
+        device is kept."""
+        return replace(self, server_url=url, token="", device_id="", username="", scopes=[], setup_done=False)
 
     def signed_out(self) -> "Settings":
         return self.for_server("")

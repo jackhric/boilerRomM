@@ -32,6 +32,9 @@ class Plugin:
     async def set_server(self, url: str) -> dict:
         return await self.app.set_server(url)
 
+    async def check_connection(self) -> dict:
+        return await self.app.check_connection()
+
     async def start_pairing(self) -> dict:
         return await self.app.start_pairing()
 
@@ -40,6 +43,9 @@ class Plugin:
 
     async def disconnect(self) -> dict:
         return await self.app.disconnect()
+
+    async def reset(self) -> dict:
+        return await self.app.reset()
 
     async def refresh_library(self) -> dict:
         return await self.app.refresh_library()
@@ -62,6 +68,9 @@ class Plugin:
     async def launch_target(self, rom_id: int) -> dict:
         return self.app.launch_target(rom_id)
 
+    async def play_target(self, rom_id: int) -> dict:
+        return await self.app.play_target(rom_id)
+
     async def set_shortcut(self, rom_id: int, appid: int) -> dict:
         return await self.app.set_shortcut(rom_id, appid)
 
@@ -73,6 +82,30 @@ class Plugin:
 
     async def download_control(self, action: str, appid: int = 0, value: int = 0) -> dict:
         return await self.app.download_control(action, appid, value)
+
+    async def emulator_versions(self, emulator_id: str) -> list:
+        return await self.app.emulator_versions(emulator_id)
+
+    async def emulator_install(self, emulator_id: str, tag: str = "") -> dict:
+        return await self.app.emulator_install(emulator_id, tag)
+
+    async def emulators_install_all(self) -> dict:
+        return await self.app.emulators_install_all()
+
+    async def finish_setup(self) -> dict:
+        return await self.app.finish_setup()
+
+    async def emulator_uninstall(self, emulator_id: str) -> dict:
+        return await self.app.emulator_uninstall(emulator_id)
+
+    async def emulator_reset(self, emulator_id: str) -> dict:
+        return await self.app.emulator_reset(emulator_id)
+
+    async def rescan_bios(self) -> dict:
+        return await self.app.rescan_bios()
+
+    async def emulator_bios_from_romm(self, emulator_id: str) -> dict:
+        return await self.app.emulator_bios_from_romm(emulator_id)
 
     async def cancel_download(self, rom_id: int) -> dict:
         return await self.app.cancel_download(rom_id)

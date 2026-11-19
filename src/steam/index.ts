@@ -16,6 +16,7 @@ export { ensureArt, iconPng, setSgdbArt, SGDB_KINDS } from "./art";
 export type { SgdbKind } from "./art";
 export { launchIfRequested, publishDownloads, toastOutcome } from "./downloads/bridge";
 export { NativeTabRow, playTabSound } from "./native";
+export { SettingsSection, settingsPages, useTransparentHeader } from "./settings";
 export { addToCollection, clearDerivedArt, ensureShortcut, hasShortcut, removeShortcut, runShortcut, setCapsule, waitForOverview } from "./shortcuts";
 
 export type SteamDeps = {

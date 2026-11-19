@@ -1,7 +1,7 @@
 # Architecture
 
-boilerRomM shows a [RomM](https://romm.app) library inside Steam's Big Picture UI, downloads what you pick into
-RetroDECK's ROM folder, and makes each installed game behave like a Steam game: a library entry, a row in
+boilerRomM shows a [RomM](https://romm.app) library inside Steam's Big Picture UI, downloads what you pick, installs
+the emulators that run it, and makes each installed game behave like a Steam game: a library entry, a row in
 Settings > Storage, Uninstall, and Steam's Downloads page while it downloads.
 
 ## Principles
@@ -29,16 +29,18 @@ Settings > Storage, Uninstall, and Steam's Downloads page while it downloads.
 | `romm.py`, `pairing.py` | the RomM client and the device code flow |
 | `library.py` | platforms and games from RomM, each with its state from the ledger |
 | `ledger.py` | the install ledger: records, states, and the check of a record against the disk |
-| `install.py` | where a game lives on disk: the ROM folder, the ES-DE folder for a platform |
+| `install.py` | where a game lives on disk: the ROM folder, one subfolder per RomM platform |
 | `downloads.py` | the download queue: one at a time, per-file `.part` with resume, every change written to the ledger |
 | `shortcuts.py` | which Steam shortcut (appid) belongs to which game |
 | `sgdb.py`, `artwork.py`, `signin.py`, `cdp.py` | SteamGridDB art, its cache, and "Sign in with Steam" for the key |
 | `video.py` | trailer streams (runs the vendored `yt_dlp` from `py_modules/`; keep this file at this depth) |
-| `retrodeck.py` | read-only view of the RetroDECK install |
+| `emulators/` | one class per emulator boilerRomM installs and runs itself: where its build comes from, its folders, its config, and the command that starts a game |
+| `releases.py`, `sevenzip.py`, `inifile.py` | fetching a release build, unpacking a `.7z`, editing an emulator's INI file |
 
 Files on the device, all under Decky's settings and runtime folders for the plugin: `settings.json`,
 `installs.json`, `shortcuts.json`, `sgdb/` (art cache), `icons/`, and `boilerromm-launch`, which every Steam
-shortcut runs. These paths, and the plugin's name they derive from, must not change: existing shortcuts and
+shortcut runs with the game's id; it runs `launch/<id>.sh`, the emulator command the backend wrote for that game.
+The same runtime folder holds `roms/`, `bios/`, `saves/`, `states/` and `emulators/`. These paths, and the plugin's name they derive from, must not change: existing shortcuts and
 records depend on them.
 
 ## Frontend (`src/`)

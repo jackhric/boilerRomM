@@ -1,13 +1,16 @@
 // What the UI and Steam's own buttons do to a game: the backend call together with its Steam side.
 import { toaster } from "@decky/api";
-import { cancelDownload, launchTarget, queueDownload, removeGame, State } from "../api";
+import { cancelDownload, playTarget, queueDownload, removeGame, State } from "../api";
 import { publishDownloads, removeShortcut, runShortcut } from "../steam";
 import { prepareShortcut } from "./shortcuts";
 
 /** Queues a download; the Steam shortcut is made first when Steam allows it, and the download goes ahead without. */
 export async function download(rom_id: number): Promise<State> {
   const appid = await prepareShortcut(rom_id).catch(() => 0);
-  return queueDownload(rom_id, appid);
+  return queueDownload(rom_id, appid).catch((e) => {
+    toaster.toast({ title: "Download did not start", body: e instanceof Error ? e.message : String(e) });
+    throw e;
+  });
 }
 
 /** Stops a download; what it fetched stays for Resume. */
@@ -23,7 +26,8 @@ export async function removeFromDevice(rom_id: number): Promise<State> {
 }
 
 export async function play(rom_id: number, name: string) {
-  const t = await launchTarget(rom_id);
-  if (t.appid) runShortcut(t.appid);
+  const t = await playTarget(rom_id);
+  if (t.blocked) toaster.toast({ title: name, body: t.blocked });
+  else if (t.appid) runShortcut(t.appid);
   else toaster.toast({ title: name, body: "No Steam shortcut yet: remove the game and download it again." });
 }

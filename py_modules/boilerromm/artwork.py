@@ -8,6 +8,7 @@ import glob
 import json
 import logging
 import os
+import shutil
 import tempfile
 import time
 from collections.abc import Callable, Iterable
@@ -35,6 +36,11 @@ class ArtCache:
                 self._index = {int(k): v for k, v in json.load(f).items() if isinstance(v, dict)}
         except (OSError, ValueError):
             pass
+
+    def clear(self) -> None:
+        self.cancel_lookups()
+        shutil.rmtree(self.root, ignore_errors=True)
+        self._index, self._dirty = {}, False
 
     def get(self, rom_id: int, sgdb_id: int | None, name: str) -> dict | None:
         e = self._index.get(int(rom_id))

@@ -1,11 +1,9 @@
 #!/bin/bash
-# Steam shortcut launcher: boilerromm-launch <es-de system> <rom path>. Refuses while the download is unfinished,
-# then hands the ROM to RetroDECK, which picks the emulator ES-DE configured for that system.
+# Steam shortcut launcher: boilerromm-launch <game id>. Runs the script the plugin wrote for that game, which holds
+# the emulator's command line. The shortcut itself never changes when the emulator or the ROM folder does.
 set -u
-system="${1:-}"; rom="${2:-}"
-if [[ -z "$system" || -z "$rom" ]]; then echo "usage: boilerromm-launch <system> <rom>" >&2; exit 2; fi
-if [[ -e "$rom.part" ]] || { [[ -d "$rom" ]] && compgen -G "$rom/*.part" >/dev/null; }; then
-  echo "boilerRomM: $rom is still downloading" >&2; exit 1
-fi
-if [[ ! -e "$rom" ]]; then echo "boilerRomM: $rom is not on this device" >&2; exit 1; fi
-exec flatpak run net.retrodeck.retrodeck -s "$system" "$rom"
+id="${1:-}"
+if [[ ! "$id" =~ ^[0-9]+$ ]]; then echo "usage: boilerromm-launch <game id>" >&2; exit 2; fi
+script="$(dirname "$(readlink -f "$0")")/launch/$id.sh"
+if [[ ! -x "$script" ]]; then echo "boilerRomM: nothing to launch for game $id; open boilerRomM once" >&2; exit 1; fi
+exec "$script"

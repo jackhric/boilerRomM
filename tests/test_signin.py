@@ -14,7 +14,8 @@ WS = "ws://127.0.0.1:8080/devtools/page/A"
 class Browser:
     """One page target whose URL and SteamGridDB session the test scripts; records every evaluated script."""
 
-    def __init__(self, url=SGDB, logged_in=True, key=KEY, created=None):
+    def __init__(self, url=SGDB, logged_in=True, key=KEY, created=None, logged_out_status=401):
+        self.logged_out_status = logged_out_status
         self.url = url
         self.logged_in = logged_in
         self.key = key
@@ -34,7 +35,7 @@ class Browser:
         self.evals.append(expression)
         if expression == JS_PREFS:
             if not self.logged_in:
-                return {"status": 401, "loggedIn": False}
+                return {"status": self.logged_out_status, "loggedIn": False}
             return {"status": 200, "loggedIn": True, "key": self.key}
         if expression == JS_CREATE:
             return {"status": 200, "key": self.created}
@@ -105,6 +106,33 @@ async def test_waits_for_the_page_then_signs_in_through_steam():
     assert submitted == [KEY] and s.stage == "done"
     assert changes == ["opening", "login", "consent", "reading", "verifying", "done"]
     s.task.cancel()
+
+
+async def test_a_visitor_steamgriddb_answers_with_a_server_error_is_sent_to_steam():
+    b = Browser(logged_in=False, logged_out_status=500)
+    s, submitted, changes, clock = make(b)
+    s.start()
+    await clock.sleep(0)
+    for _ in range(3):
+        await s.step()
+    assert b.url == OPENID_URL and s.stage == "consent"
+    b.url, b.logged_in = SGDB, True
+    assert await s.step() is True
+    assert submitted == [KEY] and s.stage == "done"
+    await s.cancel()
+
+
+async def test_the_page_is_not_sent_back_to_steam_the_moment_it_returns():
+    b = Browser(url=OPENID_URL, logged_in=False, logged_out_status=500)
+    s, submitted, changes, clock = make(b)
+    s.start()
+    await clock.sleep(0)
+    await s.step()
+    assert s.stage == "consent"
+    b.url = SGDB
+    await s.step()
+    assert b.url == SGDB
+    await s.cancel()
 
 
 async def test_an_account_without_a_key_gets_one_once():

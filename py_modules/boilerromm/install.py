@@ -1,10 +1,8 @@
-"""Where a game lives on the device: RetroDECK's ROM folder, one ES-DE system folder per RomM platform."""
+"""Where a game lives on the device: the ROM folder, one subfolder per RomM platform."""
 import os
 from dataclasses import dataclass
 
-# RomM filesystem slugs that ES-DE / RetroDECK spell differently.
-ESDE_FOLDER = {"ngc": "gc", "dc": "dreamcast", "genesis": "genesis", "md": "megadrive"}
-DEFAULT_ROMS_DIR = "~/retrodeck/roms"
+ROMS_FOLDER = "roms"
 
 
 @dataclass(frozen=True)
@@ -61,10 +59,7 @@ class InstallLocation:
         self.roms_dir = os.path.expanduser(roms_dir.replace("~", home, 1) if roms_dir.startswith("~") else roms_dir)
 
     def platform_dir(self, fs_slug: str) -> str:
-        for name in (ESDE_FOLDER.get(fs_slug), fs_slug):
-            if name and os.path.isdir(os.path.join(self.roms_dir, name)):
-                return os.path.join(self.roms_dir, name)
-        return os.path.join(self.roms_dir, ESDE_FOLDER.get(fs_slug, fs_slug))
+        return os.path.join(self.roms_dir, fs_slug)
 
     def target(self, fs_slug: str, fs_name: str, single_file: bool) -> Target:
         return Target(os.path.join(self.platform_dir(fs_slug), fs_name), not single_file)

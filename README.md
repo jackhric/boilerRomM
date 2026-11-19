@@ -2,8 +2,8 @@
 
 A Decky Loader plugin that brings games from a [RomM](https://romm.app) server to a Steam device.
 
-Browse your RomM library in a storefront inside Steam's Big Picture UI and download a game into RetroDECK's ROM
-folder. An installed game is a Steam library entry: it launches through RetroDECK, shows in Settings > Storage,
+Browse your RomM library in a storefront inside Steam's Big Picture UI and download a game. boilerRomM installs
+and configures the emulators itself. An installed game is a Steam library entry: it launches in its emulator, shows in Settings > Storage,
 has Uninstall in its menu, and appears on Steam's Downloads page while it downloads. RomM stays the catalogue.
 
 ## Setup

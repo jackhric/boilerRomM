@@ -3,11 +3,10 @@ import os
 from boilerromm.install import InstallLocation
 
 
-def test_platform_dir_prefers_esde_spelling_when_it_exists(tmp_path):
-    os.makedirs(tmp_path / "gc")
+def test_platform_dir_is_the_romm_slug(tmp_path):
     loc = InstallLocation(str(tmp_path), "/home/x")
-    assert loc.platform_dir("ngc") == str(tmp_path / "gc")
-    assert loc.platform_dir("psx") == str(tmp_path / "psx")  # missing dirs fall back to the slug
+    assert loc.platform_dir("ngc") == str(tmp_path / "ngc")
+    assert loc.platform_dir("psx") == str(tmp_path / "psx")
 
 
 def test_target_status(tmp_path):
@@ -30,7 +29,7 @@ def test_target_status(tmp_path):
 
 
 def test_tilde_expands_to_the_given_home():
-    assert InstallLocation("~/retrodeck/roms", "/home/user").roms_dir == "/home/user/retrodeck/roms"
+    assert InstallLocation("~/games/roms", "/home/user").roms_dir == "/home/user/games/roms"
 
 
 def test_launch_file_prefers_playlist_then_cue(tmp_path):

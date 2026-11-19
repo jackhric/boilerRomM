@@ -35,3 +35,10 @@ def test_the_state_has_exactly_the_keys_the_frontend_declares(tmp_path):
     declared = set(re.findall(r"^  (\w+)\??:", body, re.M))
     state = App(str(tmp_path / "settings.json"), "1", str(tmp_path), _noop, logging.getLogger("t")).state()
     assert set(state) == declared
+
+
+def test_the_frontend_opens_the_same_sign_in_page_the_backend_follows():
+    from boilerromm.signin import OPENID_URL
+
+    declared = re.search(r"export const SGDB_SIGN_IN =(.*?);", API, re.S).group(1)
+    assert "".join(re.findall(r'"([^"]*)"', declared)) == OPENID_URL

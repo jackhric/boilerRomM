@@ -41,7 +41,7 @@ describe("layers", () => {
   });
 
   it('the word "Deck" appears only in the names of other projects', () => {
-    const allowed = /Decky|RetroDECK|retrodeck|decky|SteamDeckHomebrew|Steam Deck Homebrew/g;
+    const allowed = /Decky|decky|SteamDeckHomebrew|Steam Deck Homebrew/g;
     const offenders = all.filter((f) => /deck/i.test(f.text.replace(allowed, ""))).map((f) => f.path);
     expect(offenders).toEqual([]);
   });

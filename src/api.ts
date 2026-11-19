@@ -125,6 +125,54 @@ export interface Install {
   completed_at: number;
 }
 
+export interface BiosFolder {
+  platform: string;
+  folder: string;
+  /** Names of the recognised files in the folder. */
+  found: string[];
+  ready: boolean;
+}
+
+/** The outcome of asking the RomM server now. */
+export interface ConnectionCheck {
+  reachable: boolean;
+  version: string;
+  supported: boolean;
+  signed_in: boolean;
+  username: string;
+  /** Round trip of the version request. */
+  ms: number;
+  error: string;
+}
+
+/** An emulator boilerRomM installs and runs itself (py_modules/boilerromm/emulators). */
+export interface EmulatorInfo {
+  id: string;
+  name: string;
+  /** What it emulates, e.g. "PlayStation 2". */
+  system: string;
+  platforms: string[];
+  installed: boolean;
+  /** The installed build's release tag; "" when not installed. */
+  version: string;
+  /** What to call that build: the tag, or the release's own name where the tag is only a commit. */
+  version_name: string;
+  /** Whether what it needs from the user is in place. */
+  firmware: boolean;
+  /** What that is, as it reads after "needs": "a BIOS", "firmware", "keys". */
+  requires: string;
+  ready: boolean;
+  /** Whether it has settings on the device that Reset would replace. */
+  configured: boolean;
+  /** One entry per platform whose folder the user fills with firmware or keys; empty when it needs none. */
+  bios: BiosFolder[];
+  /** "queued" is waiting its turn behind another install. */
+  busy: "" | "queued" | "installing" | "uninstalling" | "resetting" | "fetching";
+  error: string;
+  /** Bytes of the download in flight and its size (0 when the host does not say); null when nothing is downloading. */
+  progress: [done: number, total: number] | null;
+}
+
 export interface State {
   server: { url: string; version: string; error: string };
   pairing: { status: "idle" | "waiting" | "approved" | "expired" | "denied" | "error"; user_code?: string; verification_url?: string; expires_at?: number; error?: string };
@@ -134,33 +182,47 @@ export interface State {
   installs: Install[];
   installed: InstalledGame[];
   roms_dir_exists: boolean;
-  retrodeck: { installed: boolean; initialised: boolean; version: string; roms_path: string };
+  /** Bytes the installed games take, and the free and total bytes of the drive the ROM folder is on. */
+  storage: { used_bytes: number; free_bytes: number; total_bytes: number };
+  emulators: EmulatorInfo[];
+  /** Whether first-run setup has been finished on this device. */
+  setup_done: boolean;
   sgdb: { configured: boolean; error: string; art_ready: number; art_total: number; signin: SgdbSignin };
   version: string;
 }
 
 export const getState = callable<[], State>("get_state");
 export const setServer = callable<[url: string], State>("set_server");
+export const checkConnection = callable<[], ConnectionCheck>("check_connection");
 export const startPairing = callable<[], State>("start_pairing");
 export const cancelPairing = callable<[], State>("cancel_pairing");
 export const disconnect = callable<[], State>("disconnect");
+export const resetEverything = callable<[], State>("reset");
 export const refreshLibrary = callable<[], State>("refresh_library");
 export const gameDetails = callable<[rom_id: number], GameDetails>("game_details");
 export const similarGames = callable<[rom_id: number], Recommendation[]>("similar_games");
 export const cancelDownload = callable<[rom_id: number], State>("cancel_download");
 export const downloadControl = callable<[action: string, appid: number, value: number], State>("download_control");
 export const launchTarget = callable<[rom_id: number], LaunchTarget>("launch_target");
+/** `launchTarget` for a game about to be started: missing firmware is fetched from RomM first. */
+export const playTarget = callable<[rom_id: number], LaunchTarget>("play_target");
 export const coverBase64 = callable<[rom_id: number], { base64: string; format: string }>("cover_base64");
 /** Writes a shortcut icon (base64 PNG) to the plugin's runtime dir and returns its path. */
 export const saveIcon = callable<[rom_id: number, base64: string], string>("save_icon");
 /** An invalid key leaves `sgdb.configured` false with `sgdb.error` set; it does not throw. */
 export const setSgdbKey = callable<[key: string], State>("set_sgdb_key");
 export const clearSgdbKey = callable<[], State>("clear_sgdb_key");
-/** Follows the SteamGridDB page opened in Steam's browser (SGDB_HOME) until the key is saved or it fails. */
+/** Follows the page opened in Steam's browser (SGDB_SIGN_IN) until the key is saved or it fails. */
 export const startSgdbSignin = callable<[], State>("start_sgdb_signin");
 export const cancelSgdbSignin = callable<[], State>("cancel_sgdb_signin");
-/** The home page, not the API preferences, so the key is never drawn on screen. */
-export const SGDB_HOME = "https://www.steamgriddb.com/";
+/** Steam's own sign-in page for SteamGridDB, which returns to SteamGridDB signed in. Same as OPENID_URL in signin.py. */
+export const SGDB_SIGN_IN =
+  "https://steamcommunity.com/openid/login?openid.ns=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0" +
+  "&openid.mode=checkid_setup" +
+  "&openid.identity=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0%2Fidentifier_select" +
+  "&openid.claimed_id=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0%2Fidentifier_select" +
+  "&openid.realm=https%3A%2F%2Fwww.steamgriddb.com" +
+  "&openid.return_to=https%3A%2F%2Fwww.steamgriddb.com%2Flogin%2Fsteam";
 /** Fetches the game's SteamGridDB art now when it is not cached yet. */
 export const gameArt = callable<[rom_id: number], GameArt>("game_art");
 export const artBase64 = callable<[rom_id: number, kind: ArtKind], ArtBytes>("art_base64");
@@ -171,10 +233,26 @@ export const removeGame = callable<[rom_id: number], State & { removed: number }
 /** Queues a download for a game whose Steam shortcut is `appid` (0 for none). */
 export const queueDownload = callable<[rom_id: number, appid: number], State>("download");
 
-export interface LaunchTarget { rom_id: number; name: string; appid: number; exe: string; start_dir: string; launch_options: string; cover: string; installed: boolean }
+export interface LaunchTarget { rom_id: number; name: string; appid: number; exe: string; start_dir: string; launch_options: string; cover: string; installed: boolean; /** Why the game cannot start; "" when it can. */ blocked: string }
 
 /** Direct stream addresses for the game's trailer at about 360p and 720p (both silent) and its sound; "" when not resolved. */
 export const gameVideo = callable<[rom_id: number], { rom_id: number; small: string; large: string; audio: string }>("game_video");
+/** A build of an emulator that can be installed. */
+export interface EmulatorVersion { tag: string; /** What to call it, when that is not the tag. */ name?: string; prerelease: boolean; published: string; /** The build boilerRomM is tested with. */ tested: boolean }
+export const emulatorVersions = callable<[id: string], EmulatorVersion[]>("emulator_versions");
+/** Installs a build, replacing the one installed; without a tag, the tested build. */
+export const installEmulator = callable<[id: string, tag?: string], State>("emulator_install");
+/** Installs every emulator that is not installed, in the background; each row reports its own outcome. */
+export const installAllEmulators = callable<[], State>("emulators_install_all");
+export const finishSetup = callable<[], State>("finish_setup");
+/** Removes the build and keeps the settings. */
+export const uninstallEmulator = callable<[id: string], State>("emulator_uninstall");
+/** Replaces the emulator's settings with boilerRomM's defaults. Saves, states and firmware stay. */
+export const resetEmulator = callable<[id: string], State>("emulator_reset");
+/** Downloads the firmware RomM holds for the emulator's platforms; only files the emulator recognises are kept. */
+/** Looks at the BIOS folders again and sends the state. */
+export const rescanBios = callable<[], State>("rescan_bios");
+export const biosFromRomm = callable<[id: string], State>("emulator_bios_from_romm");
 export const setRomsDir = callable<[path: string], State>("set_roms_dir");
 
 const STATE_EVENT = "boilerromm_state";
