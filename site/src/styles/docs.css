@@ -1,0 +1,55 @@
+@import '@fontsource-variable/plus-jakarta-sans';
+@import './theme.css';
+
+/* Starlight's own styles are layered, so these unlayered overrides must be scoped per theme or they leak into the other one.
+   Starlight's scale runs from --sl-color-white (text) through gray-1..6 to --sl-color-black (page); light mode inverts it. */
+:root {
+  --sl-font: 'Plus Jakarta Sans Variable', system-ui, -apple-system, 'Segoe UI', Roboto, Ubuntu, sans-serif;
+}
+
+:root[data-theme='dark'] {
+  --sl-color-accent-low: #12304d;
+  --sl-color-accent: #1a9fff;
+  --sl-color-accent-high: #b9dcff;
+  --sl-color-white: #f1f2f3;
+  --sl-color-gray-1: #d6d9dc;
+  --sl-color-gray-2: #c3c8cd;
+  --sl-color-gray-3: #acb2b8;
+  --sl-color-gray-4: #636b74;
+  --sl-color-gray-5: #3d4450;
+  --sl-color-gray-6: #232a33;
+  --sl-color-black: #171d25;
+}
+
+:root[data-theme='light'] {
+  --sl-color-accent-low: #dcecfa;
+  --sl-color-accent: #0873c4;
+  --sl-color-accent-high: #0b3d66;
+  --sl-color-white: #171d25;
+  --sl-color-gray-1: #232a33;
+  --sl-color-gray-2: #353e49;
+  --sl-color-gray-3: #56606b;
+  --sl-color-gray-4: #838c96;
+  --sl-color-gray-5: #c9d0d7;
+  --sl-color-gray-6: #e6eaee;
+  --sl-color-gray-7: #f3f5f7;
+  --sl-color-black: #fbfcfd;
+}
+
+h1, h2, h3, .sl-markdown-content :is(h1, h2, h3) {
+  font-family: var(--display);
+  letter-spacing: -0.015em;
+}
+
+/* Starlight cycles card icons through orange/purple/green; keep them on the single accent. */
+.card {
+  --sl-card-border: var(--sl-color-accent);
+  --sl-card-bg: var(--sl-color-accent-low);
+}
+
+/* Screenshots of Game Mode are always dark, so they get the same frame in both themes. */
+.sl-markdown-content img {
+  border-radius: 10px;
+  border: 1px solid var(--sl-color-gray-5);
+  background: #0e141b;
+}

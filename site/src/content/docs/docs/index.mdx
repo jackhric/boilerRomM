@@ -1,0 +1,28 @@
+---
+title: Overview
+description: What boilerRomM is, what it needs and where to start.
+---
+
+import { LinkCard } from '@astrojs/starlight/components';
+import Shot from '../../../components/Shot.astro';
+
+boilerRomM is a [Decky Loader](https://github.com/SteamDeckHomebrew/decky-loader) plugin that shows your
+[RomM](https://romm.app) library as a store inside Steam's Game Mode. Pick a game and press **Download**: it appears
+in your Steam library as a real entry with its artwork, and boilerRomM installs and configures the emulator that runs
+it.
+
+It has three parts, all inside Steam:
+
+- A store: Discover, Browse, Top rated, New and Consoles, with search, filters, box art and trailers
+- Steam library entries for the games you download, with Settings > Storage, Uninstall and Steam's Downloads page
+- An emulator manager that installs nine emulators and the firmware they need from your RomM server
+
+<Shot name="hero" alt="The Discover page: a spotlight with a game's logo, description and Download button, next to a list of picks" />
+
+boilerRomM is in development and has no release yet. See [what works today](../#status).
+
+<LinkCard title="Install" description="What you need, and how to get it onto your device." href="install/" />
+<LinkCard title="First-run setup" description="Server, pairing, artwork and emulators, in about five minutes." href="setup/" />
+<LinkCard title="The store and your library" description="Browsing, downloading, and what a downloaded game is in Steam." href="guides/store/" />
+<LinkCard title="Emulators and BIOS" description="Which emulator runs what, and how firmware gets installed." href="guides/emulators/" />
+<LinkCard title="FAQ" description="Short answers, including what boilerRomM does not do." href="faq/" />

@@ -1,0 +1,76 @@
+---
+title: FAQ
+description: Answers about boilerRomM, the Decky Loader plugin that turns a RomM server into a store in Steam Game Mode, from setup and downloads to emulators, firmware and what it does not do.
+---
+
+export const faqs = [
+  {
+    q: 'What is boilerRomM?',
+    a: "boilerRomM is a free, open-source (AGPL-3.0) Decky Loader plugin. It shows the games on your own RomM server as a store inside Steam's Game Mode, downloads the ones you pick, adds them to your Steam library with artwork, and installs and configures the emulators that run them.",
+  },
+  {
+    q: 'Is it ready to use?',
+    a: 'Not yet. The store, setup, downloads, Steam library entries and emulator installs work on a device, but most emulators have not launched a real game through boilerRomM yet, controller mapping is not set up per emulator, and there is no release. It is in active development.',
+  },
+  {
+    q: 'Does boilerRomM come with games, BIOS files or keys?',
+    a: 'No. boilerRomM has no games, BIOS, firmware or keys, and does not download them from anywhere but your own RomM server. You need a RomM server with your own files on it.',
+  },
+  {
+    q: 'What do I need?',
+    a: 'An x86-64 Steam Deck, SteamOS or Bazzite device with Decky Loader, a RomM 5.4.1 or newer server the device can reach, a free SteamGridDB account for artwork, and about 800 MB for the emulators plus room for your games.',
+  },
+  {
+    q: 'Which devices has it been tested on?',
+    a: 'It is developed on a Bazzite handheld in Game Mode. It should work wherever Decky Loader runs on x86-64 SteamOS, including the Steam Deck, but it has not been tested on every device yet.',
+  },
+  {
+    q: 'Why does it need my RomM server to be 5.4.1 or newer?',
+    a: "boilerRomM pairs with RomM's device code sign-in, so no password is typed on the device: you scan a QR code with your phone, sign in to RomM there and approve the device. Older RomM versions do not have it.",
+  },
+  {
+    q: 'Do I have to type my RomM password on the Deck?',
+    a: 'No. You approve the device from your phone or any browser. The device keeps only the token RomM gives it, in a file only it can read.',
+  },
+  {
+    q: 'Why does it want a SteamGridDB account?',
+    a: 'Box art, banners, logos and icons come from SteamGridDB, and its API needs a free key. Setup gets the key for you when you sign in with Steam, or you can paste one.',
+  },
+  {
+    q: 'Which emulators does it use?',
+    a: 'RetroArch for older consoles, PCSX2, Dolphin, Xenia Canary, RPCS3, Cemu, shadPS4, Lichii and KytyPS5. Setup installs all nine; each is pinned to a build tested with boilerRomM, and you can pick another version in Settings > Emulators.',
+  },
+  {
+    q: 'Do I need RetroDECK or EmuDeck as well?',
+    a: 'No. boilerRomM installs and configures its own copies of the emulators, in its own folder.',
+  },
+  {
+    q: 'How does it get BIOS and firmware files?',
+    a: "From the firmware you uploaded to each console in RomM. After an emulator installs, and again before a game launches, boilerRomM installs the files that emulator can use. Files are recognised by their contents, not their names. Settings > BIOS Files shows what is installed and what is missing.",
+  },
+  {
+    q: 'Where are games and emulators stored?',
+    a: "In Decky's folder for the plugin: emulators, BIOS files, saves and save states each have their own folder there. Games go in the ROM folder set in Settings > Storage, one subfolder per system.",
+  },
+  {
+    q: 'What happens if a download is interrupted?',
+    a: "It carries on. Each file resumes where it stopped, including after a restart. Downloads also show on Steam's Downloads page.",
+  },
+  {
+    q: 'Is it affiliated with Valve, RomM or the emulator projects?',
+    a: 'No. boilerRomM is an independent project by Jack Hric. It is not affiliated with or endorsed by Valve, RomM, SteamGridDB or any emulator project.',
+  },
+];
+
+<script type="application/ld+json" set:html={JSON.stringify({
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: faqs.map(({ q, a }) => ({ '@type': 'Question', name: q, acceptedAnswer: { '@type': 'Answer', text: a } })),
+})} />
+
+{faqs.map(({ q, a }) => (
+  <>
+    <h2 id={q.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}>{q}</h2>
+    <p>{a}</p>
+  </>
+))}

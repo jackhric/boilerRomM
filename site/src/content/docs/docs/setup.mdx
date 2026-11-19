@@ -1,0 +1,63 @@
+---
+title: First-run setup
+description: Connect boilerRomM to your RomM server, pair the device from your phone, sign in for artwork and install the emulators.
+---
+
+import Shot from '../../../components/Shot.astro';
+
+Open Quick Access (…) → **boilerRomM** → **Set up boilerRomM**. Setup is a series of full-screen steps, one thing on
+each, and takes about five minutes. If you leave halfway, it picks up at the first step you have not done.
+
+## Where is your RomM server?
+
+Type the address you use to open RomM in a browser. boilerRomM tries `https://` first, then `http://`. If nothing
+answers, check the address and that the server is on and reachable from the device.
+
+RomM 5.4.1 or newer is needed; an older server is named in the error.
+
+## Pair this device
+
+boilerRomM signs in with RomM's device code flow, so you never type a password on the device:
+
+1. Scan the QR code with your phone.
+2. Sign in to RomM there.
+3. Approve this device.
+
+<Shot name="pair" alt="Pair this device: three steps on the left, a QR code and a short code on the right" />
+
+No camera? Open the address shown under the code on any computer or phone and enter the code. If the code runs out,
+press **Get a new code**. The device keeps only the token RomM gives it, in a file only it can read.
+
+## Connected to RomM
+
+A check of the server version, your sign-in and the library: how many games on how many platforms. If the library
+cannot be read, **Try again** reads it again.
+
+## Your games need artwork
+
+Box art, banners, logos and icons come from [SteamGridDB](https://www.steamgriddb.com), which needs a free account.
+Press **Sign in with Steam**: Steam's sign-in page opens, you press **Sign In**, and you come back with your
+SteamGridDB key saved for you.
+
+If you prefer, choose **Type a key instead** and paste your key from steamgriddb.com → your profile → Preferences → API.
+
+## Install emulators
+
+boilerRomM installs nine emulators, so every system in your library has one, about 800 MB in all. Press
+**Install all**. They install one after another, oldest console first; after each one, boilerRomM looks on your
+RomM server for the firmware it needs and installs it.
+
+<Shot name="setup" alt="Installing emulators: the first ones installed, RPCS3 installing its firmware, the rest waiting" />
+
+An emulator that fails says **Didn't install. You can try again in Settings.** The others carry on.
+
+## Firmware
+
+This step appears only when an emulator still needs firmware that your RomM server does not have. It lists each one
+and what it needs. Upload the files to that console's firmware section in RomM, then install them from
+**Settings > BIOS Files**. See [Emulators and BIOS](../guides/emulators/#bios-and-firmware).
+
+## Ready
+
+**boilerRomM is ready**. Press **Open the store**. Afterwards, Quick Access shows **Open store**, and the gear next to
+boilerRomM's name opens its settings.

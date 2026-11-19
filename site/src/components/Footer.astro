@@ -1,0 +1,103 @@
+---
+import { Button } from '@/components/starwind/button';
+import { Card } from '@/components/starwind/card';
+import Icon from './Icon.astro';
+import Shot from './Shot.astro';
+
+interface Props { repo: string }
+const { repo } = Astro.props;
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+---
+
+<section id="get-started" class="cta" aria-labelledby="cta-title">
+  <Card class="cta-card relative overflow-hidden gap-0 p-0 rounded-[20px]">
+    <div class="grid">
+      <div class="copy">
+        <h2 id="cta-title">Try it while it's early</h2>
+        <ol class="installs">
+          <li>
+            <span class="where"><b>1</b>On your server</span>
+            <span class="hint">RomM 5.4.1 or newer with your games, and any BIOS or firmware in each console's
+              firmware section.</span>
+          </li>
+          <li>
+            <span class="where"><b>2</b>On your computer</span>
+            <span class="hint">There is no release yet, so build it from source and deploy it to your device with{' '}
+              <a href="https://jackhric.github.io/decky-toolkit/">Decky Toolkit</a>.</span>
+          </li>
+          <li>
+            <span class="where"><b>3</b>On your device</span>
+            <span class="hint">Quick Access → boilerRomM → <strong>Set up boilerRomM</strong>.</span>
+          </li>
+        </ol>
+        <div class="buttons">
+          <Button href={`${base}/docs/install/`} variant="primary" class="select-none font-semibold">Install guide</Button>
+          <Button href={`${repo}/releases`} variant="outline" class="select-none">
+            <Icon name="github" class="size-[18px]" />Watch for a release
+          </Button>
+        </div>
+      </div>
+
+      <div class="media" aria-hidden="true">
+        <Shot name="consoles" alt="" sizes="(max-width: 860px) 100vw, 460px" />
+      </div>
+    </div>
+  </Card>
+</section>
+
+<footer class="site-footer">
+  <nav aria-label="Project links">
+    <a href={`${base}/docs/`}>Docs</a>
+    <a href={`${base}/docs/faq/`}>FAQ</a>
+    <a href={repo}>GitHub</a>
+    <a href={`${repo}/releases`}>Releases</a>
+    <a href={`${repo}/blob/main/LICENSE`}>AGPL-3.0 License</a>
+  </nav>
+  <p class="small">Not affiliated with Valve, RomM, SteamGridDB or any emulator project.</p>
+</footer>
+
+<style>
+  .cta { max-width: 1040px; margin: 0 auto; padding: 8px 20px 40px; }
+  .cta :global(.cta-card)::before {
+    content: ''; position: absolute; right: -10%; top: -30%; width: 70%; height: 160%; pointer-events: none;
+    background: radial-gradient(closest-side, color-mix(in srgb, var(--primary) 16%, transparent), transparent 75%);
+  }
+  .grid {
+    position: relative; display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    align-items: center; gap: 44px; padding: 44px 48px;
+  }
+  .copy { min-width: 0; }
+  h2 {
+    margin: 0 0 24px; text-align: left; font: 600 clamp(1.5rem, 3vw, 2.1rem)/1.15 var(--display);
+    letter-spacing: -0.02em; text-wrap: balance;
+  }
+  .installs { list-style: none; margin: 0 0 26px; padding: 0; display: grid; gap: 16px; }
+  .installs li { display: grid; gap: 4px; min-width: 0; }
+  .where { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; font-weight: 700; }
+  .where b {
+    display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; font-size: 0.75rem;
+    background: var(--primary); color: var(--primary-foreground);
+  }
+  .hint { padding-left: 30px; font-size: 0.92rem; color: var(--muted-foreground); }
+  .hint a, .hint strong { color: var(--foreground); }
+  .buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+  .media { min-width: 0; user-select: none; -webkit-user-select: none; }
+
+  .site-footer {
+    max-width: 1040px; margin: 0 auto; padding: 24px 20px 40px; display: flex; justify-content: space-between;
+    align-items: center; gap: 12px 24px; flex-wrap: wrap; color: var(--muted-foreground); font-size: 0.9rem;
+  }
+  nav { display: flex; gap: 6px 20px; flex-wrap: wrap; }
+  nav a { color: var(--foreground); text-decoration: none; font-weight: 500; }
+  nav a:hover { text-decoration: underline; text-underline-offset: 3px; }
+  .small { margin: 0; font-size: 0.85rem; }
+
+  @media (max-width: 860px) {
+    .grid { grid-template-columns: minmax(0, 1fr); gap: 32px; padding: 36px 32px; }
+  }
+  @media (max-width: 560px) {
+    .grid { padding: 28px 18px; }
+    .buttons :global(a) { flex: 1 1 100%; }
+    .site-footer, nav { justify-content: center; text-align: center; }
+  }
+</style>

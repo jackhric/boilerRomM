@@ -1,0 +1,18 @@
+---
+import Wordmark from '../Wordmark.astro';
+
+const { siteTitleHref } = Astro.locals.starlightRoute;
+---
+
+<a href={siteTitleHref} class="site-title sl-flex">
+  <Wordmark class="logo" />
+</a>
+
+<style>
+  @layer starlight.core {
+    .site-title { align-items: center; min-width: 0; text-decoration: none; }
+    .site-title :global(.logo) { font-size: 1.6rem; }
+  }
+  /* In the light theme the plugin's light-on-dark colours would vanish, so the wordmark takes the page's text colours. */
+  :global(:root[data-theme='light']) .site-title { --wordmark-light: #636b74; --wordmark-bold: #171d25; }
+</style>

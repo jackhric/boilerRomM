@@ -357,7 +357,7 @@ function MissingFirmware({ state, next }: { state: State; next(): void }) {
         <SetupButton primary onClick={next}>Continue</SetupButton>
       </div>
       <div style={{ ...T.body, marginTop: 10, maxWidth: 1000 }}>
-        Not found on your RomM server. Add them there, then use Get from RomM in Settings, under BIOS.
+        Not found on your RomM server. Add them there, then install them in Settings, under BIOS Files.
       </div>
       <div style={{ display: "grid", gap: 2, gridAutoRows: "max-content", marginTop: 22, overflowY: "auto", scrollbarWidth: "none", minHeight: 0 }}>
         {missing.map((e) => {
@@ -403,13 +403,20 @@ function Ready({ state }: { state: State }) {
   );
 }
 
-function Setup({ state }: { state: State }) {
-  const [step, setStep] = useState<Step>(() => resume(state));
+/**
+ * A screen of setup shown on demand with a made-up state, for screenshots and for looking at a step without wiping
+ * the device: set `window.__boilerRomM.setupDemo = { step, state }` and open the setup page.
+ */
+const demoSetup = (): { step: Step; state: State } | undefined => (window as any).__boilerRomM?.setupDemo;
+
+function Setup({ state, forced }: { state: State; forced?: Step }) {
+  const [step, setStep] = useState<Step>(() => forced ?? resume(state));
   const ref = useRef<HTMLDivElement>(null);
   const go = (to: Step) => setStep(to);
 
   // What the backend reports moves setup on by itself: approval on the phone, the key arriving, installs starting.
   useEffect(() => {
+    if (forced) return undefined;
     if (step === "pair" && state.account.paired) {
       const t = setTimeout(() => go("verify"), 1200);
       return () => clearTimeout(t);
@@ -450,9 +457,11 @@ function Setup({ state }: { state: State }) {
 
 function Route() {
   useTransparentHeader();
-  const state = useBackendState();
+  const live = useBackendState();
+  const demo = demoSetup();
+  const state = demo?.state ?? live;
   if (!state) return <div style={PAGE}><SteamSpinner /></div>;
-  return <Setup state={state} />;
+  return <Setup key={demo?.step} state={state} forced={demo?.step} />;
 }
 
 export function SetupPage() {

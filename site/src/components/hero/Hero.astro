@@ -1,0 +1,143 @@
+---
+import { Button } from '@/components/starwind/button';
+import Icon from '../Icon.astro';
+import Shot from '../Shot.astro';
+import Wordmark from '../Wordmark.astro';
+
+interface Props { repo: string }
+const { repo } = Astro.props;
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const iconButton = 'text-(--hero-text) rounded-lg hover:bg-(--hero-text)/8 hover:text-(--hero-text) select-none';
+---
+
+<section class="hero">
+  <div class="glow" aria-hidden="true"></div>
+  <div class="stage" aria-hidden="true">
+    <div class="screens">
+      <Shot name="browse" alt="" class="back" sizes="900px" />
+      <Shot name="game" alt="" class="middle" sizes="900px" />
+      <Shot name="hero" alt="" class="front" eager sizes="(max-width: 760px) 100vw, 1000px" />
+    </div>
+  </div>
+  <div class="shade"></div>
+
+  <header class="top">
+    <nav>
+      <a href="#how">How it works</a>
+      <a href="#emulators">Emulators</a>
+      <a href={`${base}/docs/faq/`}>FAQ</a>
+      <Button href={`${base}/docs/`} variant="ghost" size="sm" class={`docs text-base px-2.5 ${iconButton}`}>Docs</Button>
+      <Button href={repo} title="GitHub" variant="ghost" size="icon-sm" class={iconButton}>
+        <Icon name="github" label="GitHub" class="size-5" />
+      </Button>
+    </nav>
+  </header>
+
+  <div class="content">
+    <p class="status"><span class="dot"></span>In development · no release yet</p>
+    <Wordmark class="mark" />
+    <h1>Your RomM library, as a&nbsp;store in&nbsp;Steam</h1>
+    <p class="lede">
+      A Decky Loader plugin for Game Mode. Browse your own <a href="https://romm.app">RomM</a> server with box art and
+      trailers, press Download, and the game shows up in your Steam library with its emulator already installed.
+    </p>
+    <div class="ctas">
+      <a class="cta primary" href={`${base}/docs/install/`}>How to install</a>
+      <a class="cta" href={repo}><Icon name="github" class="size-[18px]" />Source on GitHub</a>
+    </div>
+    <p class="needs">Needs Decky Loader and RomM 5.4.1 or newer</p>
+  </div>
+</section>
+
+<style>
+  .hero {
+    position: relative; overflow: hidden; isolation: isolate; color: var(--hero-text); background: var(--hero-bg);
+    min-height: min(88vh, 820px); display: flex; flex-direction: column;
+  }
+  .glow {
+    position: absolute; inset: -20% -10% auto 30%; height: 110%; pointer-events: none;
+    background: radial-gradient(circle at 50% 5%, var(--hero-glow) 0%, rgb(94 174 255 / 0.08) 30%, transparent 70%);
+  }
+  .stage {
+    position: absolute; inset: 0; pointer-events: none; user-select: none; -webkit-user-select: none;
+    perspective: 1800px; perspective-origin: 70% 30%;
+  }
+  .screens {
+    position: absolute; left: 47%; top: 21%; width: 980px; aspect-ratio: 2 / 1;
+    transform: rotateY(-17deg) rotateX(5deg) rotateZ(1deg); transform-origin: 0 50%;
+    animation: settle 1.6s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
+  }
+  @keyframes settle {
+    from { transform: translate3d(80px, 30px, -120px) rotateY(-26deg) rotateX(8deg) rotateZ(1deg); }
+  }
+  /* Three captures fanned back from the front one, like a stack of Steam pages. */
+  .screens :global(.shot) { position: absolute; inset: 0; }
+  .screens :global(.back) { translate: 150px -104px; scale: 0.84; opacity: 0.4; filter: saturate(0.6); }
+  .screens :global(.middle) { translate: 76px -52px; scale: 0.92; opacity: 0.65; filter: saturate(0.8); }
+  .screens :global(.front) { box-shadow: 0 40px 90px -20px rgb(0 0 0 / 0.75), 0 0 0 1px rgb(255 255 255 / 0.06); }
+  .shade {
+    position: absolute; inset: 0; z-index: 1; pointer-events: none;
+    background:
+      linear-gradient(90deg, var(--hero-bg) 10%, color-mix(in srgb, var(--hero-bg) 92%, transparent) 34%, color-mix(in srgb, var(--hero-bg) 30%, transparent) 52%, transparent 66%),
+      linear-gradient(to bottom, var(--hero-bg), transparent 16%, transparent 76%, var(--hero-bg));
+  }
+
+  .top {
+    position: relative; z-index: 3; width: 100%; max-width: 1160px; margin: 0 auto; padding: 18px 28px;
+    display: flex; justify-content: flex-end;
+  }
+  .top nav { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+  .top nav a { color: var(--hero-muted); text-decoration: none; font-weight: 500; }
+  .top nav a:hover { color: var(--hero-text); }
+
+  .content {
+    position: relative; z-index: 2; width: 100%; max-width: 1160px; margin: auto; padding: 48px 28px 104px;
+  }
+  .content > * { max-width: 480px; }
+  .status {
+    display: inline-flex; align-items: center; gap: 8px; margin: 0 0 26px; padding: 5px 12px 5px 10px;
+    border-radius: 999px; font-size: 0.85rem; font-weight: 600; color: var(--hero-muted);
+    background: rgb(255 255 255 / 0.06); border: 1px solid rgb(255 255 255 / 0.1);
+  }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: #f2c14e; box-shadow: 0 0 0 3px rgb(242 193 78 / 0.18); }
+  .content :global(.mark) { display: block; font-size: clamp(2.6rem, 6vw, 4.2rem); margin: 0 0 22px; }
+  h1 {
+    margin: 0 0 18px; font: 600 clamp(1.7rem, 3.6vw, 2.6rem)/1.12 var(--display); letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
+  .lede { margin: 0 0 30px; color: var(--hero-muted); font-size: 1.08rem; line-height: 1.6; }
+  .lede a { color: var(--hero-text); }
+  .ctas { display: flex; gap: 12px; flex-wrap: wrap; }
+  .cta {
+    display: inline-flex; align-items: center; gap: 8px; height: 46px; padding: 0 20px; border-radius: 6px;
+    font-weight: 700; text-decoration: none; color: var(--hero-text);
+    background: rgb(255 255 255 / 0.08); border: 1px solid rgb(255 255 255 / 0.14);
+    transition: background-color 0.1s ease-out;
+  }
+  .cta:hover { background: rgb(255 255 255 / 0.14); }
+  .cta.primary { background: var(--steam-blue); border-color: transparent; color: #08121c; }
+  .cta.primary:hover { background: #47b2ff; }
+  .cta:focus-visible { outline: 2px solid #67c1f5; outline-offset: 3px; }
+  .needs { margin: 18px 0 0; font-size: 0.88rem; color: var(--hero-dim); }
+
+  @media (max-width: 1100px) {
+    .screens { left: 52%; width: 860px; }
+  }
+  @media (max-width: 860px) {
+    .hero { min-height: auto; }
+    .top nav > a { display: none; }
+    .stage { position: relative; inset: auto; order: 2; height: 300px; perspective-origin: 50% 0; margin-top: -24px; }
+    .screens { left: 20px; right: auto; top: 0; width: min(640px, 130vw); transform: rotateX(18deg); transform-origin: 50% 0; }
+    @keyframes settle { from { transform: translate3d(0, 40px, -60px) rotateX(24deg); } }
+    .screens :global(.back), .screens :global(.middle) { display: none; }
+    .shade { background: linear-gradient(to bottom, transparent 70%, var(--hero-bg)); }
+    .content { margin: 0; padding: 24px 20px 44px; }
+  }
+  @media (max-width: 400px) {
+    .top { padding: 14px 16px; }
+    .content { padding-inline: 16px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .screens { animation: none; }
+  }
+</style>

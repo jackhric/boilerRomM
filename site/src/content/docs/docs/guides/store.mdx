@@ -1,0 +1,68 @@
+---
+title: The store and your library
+description: Browsing your RomM library in boilerRomM's store, downloading games, and what a downloaded game is in Steam.
+---
+
+import Shot from '../../../../components/Shot.astro';
+
+## The store
+
+Open it from Quick Access → **boilerRomM** → **Open store**. It has five tabs:
+
+- **Discover**: a spotlight with trailers, a list of picks, a Featured shelf and your consoles
+- **Browse**: your whole library as box art, with **All consoles** and **All genres** filters, a sort menu, and
+  **Only on this device** to see what you have downloaded
+- **Top rated** and **New** (new on your server)
+- **Consoles**: one page per system in your library
+
+**Search games** at the top searches the whole library. The refresh button reads the library from RomM again; the
+store keeps no copy of its own, so what you see is what your server has.
+
+<Shot name="browse" alt="The Browse page: a grid of box art with console and genre filters" />
+
+## A game's page
+
+Each game has a page with its artwork, a muted trailer when one is found, its description, reviews, genres and what
+is on this device: its status, size and file. **More like this** suggests similar games from your library. The
+**…** menu has **Remove from this device** and **Open in RomM**.
+
+<Shot name="game" alt="A game page with box art, a trailer, the Download button, reviews and what is on this device" />
+
+Descriptions, ratings and suggestions come from RomM. Artwork comes from SteamGridDB, and trailers are streamed with
+[yt-dlp](https://github.com/yt-dlp/yt-dlp).
+
+## Downloads
+
+Press **Download** on a game. Downloads run one at a time, in the order you queued them, and show:
+
+- on the game's page and button
+- on Steam's own **Downloads** page, next to your Steam games
+
+<Shot name="downloads" alt="Steam's Downloads page with a boilerRomM game downloading" />
+
+Each file downloads to a partial file and resumes where it stopped, so a download cut off by a restart carries on
+by itself. **Stop download** stops it; **Resume** picks it up again.
+
+Games are saved in the ROM folder set in **Settings > Storage**, one subfolder per system.
+
+## In your Steam library
+
+A downloaded game is a non-Steam shortcut in your library, with box art, a banner, a logo and an icon from
+SteamGridDB. Pressing **Play** runs it in its emulator.
+
+<Shot name="library" alt="Steam's library, Non-Steam tab, with boilerRomM games and their box art" />
+
+It also:
+
+- appears in Steam's **Settings > Storage** with its size
+- has **Uninstall** in its menu, which removes its files from the device
+- shows its files under **Properties → Installed Files**
+
+:::note
+boilerRomM is in development: most emulators have not launched a real game through it yet. See
+[Emulators and BIOS](../emulators/#status).
+:::
+
+<Shot name="storage" alt="Steam's Storage settings listing boilerRomM games by size" />
+
+Everything boilerRomM changes in Steam applies only to its own games, and unloading the plugin undoes it.

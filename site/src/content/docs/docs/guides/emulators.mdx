@@ -1,0 +1,84 @@
+---
+title: Emulators and BIOS
+description: Which emulator boilerRomM uses for each system, where the builds come from, and how BIOS and firmware are installed from your RomM server.
+---
+
+import Shot from '../../../../components/Shot.astro';
+
+boilerRomM installs and runs its own emulators. You do not need a separate emulator suite: setup installs all nine, and each game launches in the one for its system.
+
+## Which emulator runs what
+
+| Emulator | Systems | Firmware it needs |
+| --- | --- | --- |
+| RetroArch | NES and Famicom, SNES, N64, Game Boy, Game Boy Color, Game Boy Advance, Virtual Boy, Genesis, Master System, Sega CD, 32X, Saturn, PlayStation, Atari 2600, 5200 and 7800, Lynx, Jaguar, Neo Geo Pocket, WonderSwan, 3DO | A BIOS for Saturn, Sega CD and 3DO |
+| PCSX2 | PlayStation 2 | A PS2 BIOS |
+| Dolphin | GameCube, Wii | None |
+| Xenia Canary | Xbox 360 | None |
+| RPCS3 | PlayStation 3 | The PS3 system software update file (`PS3UPDAT.PUP`) |
+| Cemu | Wii U | Keys only for disc images (`keys.txt`) |
+| shadPS4 | PlayStation 4 | PS4 system modules (`.sprx`) |
+| Lichii | Nintendo Switch, Switch 2 | Console keys (`prod.keys`, optionally `title.keys`) |
+| KytyPS5 | PlayStation 5 | None |
+
+RetroArch uses one core per system (SwanStation for PlayStation, Mesen for NES, Snes9x for SNES, mGBA for Game Boy
+Advance, Genesis Plus GX for Sega's consoles, and so on). The cores are fetched from libretro's buildbot. PlayStation
+games start without a BIOS file because SwanStation has its own.
+
+A game on a system none of these cover says **boilerRomM has no emulator for** that system.
+
+## Where the builds come from
+
+Each emulator is downloaded from its project's own releases on GitHub; RetroArch comes from libretro's buildbot.
+Dolphin has no official AppImage, so its build comes from
+[pkgforge-dev/Dolphin-emu-AppImage](https://github.com/pkgforge-dev/Dolphin-emu-AppImage).
+
+Every emulator is pinned to a build tested with boilerRomM, marked **recommended**. A download is checked against
+its expected size, and against its SHA-256 checksum when the release publishes one.
+
+boilerRomM writes each emulator's settings for Game Mode: fullscreen, its BIOS, save and save-state folders, and,
+where the emulator has them, no welcome or update prompts.
+
+## Settings > Emulators
+
+<Shot name="emulators" alt="Settings > Emulators with each emulator's version drop-down and menu" />
+
+Each emulator has a version drop-down with the recommended build and the project's newest releases (Dolphin and RPCS3
+offer only their latest). Picking another one installs it. The **…** menu has:
+
+- **Reinstall**: download the same build again
+- **Reset**: put back boilerRomM's settings for it
+- **Uninstall**: remove it
+
+Emulators do not update themselves.
+
+## BIOS and firmware
+
+Some emulators need files from the console itself. boilerRomM never comes with them: it takes them from **your RomM
+server**, from the firmware you uploaded to each console in RomM.
+
+- After an emulator installs, boilerRomM looks on your server for the firmware it needs and installs it.
+- Before a game launches, it checks again and installs anything still missing.
+- Files are recognised by their contents (a checksum or header), not by their names, and checked again after
+  download.
+
+<Shot name="bios" alt="Settings > BIOS Files: installed PS2 BIOS and PS3 firmware, and emulators still missing theirs" />
+
+**Settings > BIOS Files** lists each emulator that uses firmware, with what is installed, what is missing and what it
+accepts. **Install…** lists the matching files on your server, with the best one marked **recommended**; a set of
+files can be installed in one go. The button is greyed out when your server has nothing that fits.
+**Uninstall** removes the files from the device; they stay on RomM.
+
+RPCS3's firmware is installed by RPCS3 itself and can take a few minutes.
+
+If a game's emulator still has no firmware, the game does not start and says what to do, for example
+"PCSX2 needs a BIOS, and RomM did not have one. Add it in Settings, under BIOS."
+
+## Status
+
+boilerRomM installs, configures and supplies firmware to all nine emulators today. What is not done yet:
+
+- Most emulators have not launched a real game through boilerRomM yet.
+- Controller mapping is not set up per emulator. RetroArch uses its SDL gamepad driver and Cemu gets a controller
+  profile; the others use their own defaults.
+- There is no automatic update check.

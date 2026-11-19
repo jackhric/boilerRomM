@@ -1,0 +1,15 @@
+---
+// The plugin's wordmark (src/ui/kit/wordmark.tsx): Space Grotesk, "boiler" regular and grey, "RomM" bold and light.
+interface Props { class?: string }
+const { class: className } = Astro.props;
+---
+
+<span class:list={['wordmark', className]} translate="no">boiler<b>RomM</b></span>
+
+<style>
+  .wordmark {
+    font-family: 'Space Grotesk', sans-serif; font-weight: 400; line-height: 1; letter-spacing: -0.025em;
+    color: var(--wordmark-light, #9aa1a9); white-space: nowrap;
+  }
+  b { font-weight: 700; color: var(--wordmark-bold, #f1f2f3); }
+</style>

@@ -1,0 +1,92 @@
+/* The plugin's own look: Steam's dark blue-grey (#171d25 page, #232a33 rows) and Steam blue (#1a9fff) for primary
+   buttons, focus and selection. The hero stays dark in both themes because it frames screenshots of Game Mode. */
+@font-face {
+  font-family: 'Space Grotesk';
+  src: url('../../../assets/fonts/SpaceGrotesk-latin.woff2') format('woff2');
+  font-weight: 300 700;
+  font-display: swap;
+}
+
+:root {
+  --radius: 0.5rem;
+  --display: 'Space Grotesk', 'Plus Jakarta Sans Variable', system-ui, sans-serif;
+
+  --background: #f3f5f7;
+  --foreground: #171d25;
+  --card: #ffffff;
+  --card-foreground: var(--foreground);
+  --popover: #ffffff;
+  --popover-foreground: var(--foreground);
+  --primary: #0873c4;
+  --primary-foreground: #ffffff;
+  --primary-accent: #06629f;
+  --secondary: #e3e8ed;
+  --secondary-foreground: var(--foreground);
+  --secondary-accent: var(--foreground);
+  --muted: #eceff3;
+  --muted-foreground: #56606b;
+  --accent: #e2effa;
+  --accent-foreground: #0b5a96;
+  --info: #7dd3fc;
+  --info-foreground: #082f49;
+  --success: #59bf40;
+  --success-foreground: #0b1f06;
+  --warning: #f2c14e;
+  --warning-foreground: #3d2a00;
+  --error: #b91c1c;
+  --error-foreground: #fafafa;
+  --border: #dde3e9;
+  --input: #dde3e9;
+  --outline: #1a9fff;
+
+  --selection-bg: rgb(26 159 255 / 0.28);
+  --selection-text: inherit;
+
+  --hero-bg: #171d25;
+  --hero-text: #f1f2f3;
+  --hero-muted: #acb2b8;
+  --hero-dim: #9aa1a9;
+  --hero-glow: rgb(94 174 255 / 0.3);
+  --steam-blue: #1a9fff;
+
+  --frame-bg: #0e141b;
+  --frame-border: rgb(255 255 255 / 0.09);
+  --frame-shadow: rgb(5 10 16 / 0.55);
+
+  --feature-mark-bg: var(--muted);
+  --feature-mark-fg: #2c3540;
+  --feature-hover-ring: rgb(0 0 0 / 0.1);
+  --feature-hover-shadow: rgb(0 0 0 / 0.14);
+
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #171d25;
+    --foreground: #f1f2f3;
+    --card: #232a33;
+    --popover: #232a33;
+    --primary: #1a9fff;
+    --primary-foreground: #08121c;
+    --primary-accent: #47b2ff;
+    --secondary: #2c343e;
+    --muted: #1e252e;
+    --muted-foreground: #acb2b8;
+    --accent: #1b3857;
+    --accent-foreground: #b9dcff;
+    --error: #991b1b;
+    --border: #2e3640;
+    --input: #3d4450;
+    --outline: #67c1f5;
+    --feature-mark-fg: #d6d9dc;
+    --feature-hover-ring: rgb(255 255 255 / 0.12);
+    --feature-hover-shadow: rgb(0 0 0 / 0.45);
+    color-scheme: dark;
+  }
+}
+
+::selection {
+  background: var(--selection-bg);
+  color: var(--selection-text);
+}

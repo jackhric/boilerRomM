@@ -1,0 +1,124 @@
+---
+import { Badge } from '@/components/starwind/badge';
+import { Card } from '@/components/starwind/card';
+import Glyph from './Glyph.astro';
+
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const card = [
+  'bento-card group relative gap-0 px-6 py-[22px] rounded-2xl max-[600px]:p-5',
+  'has-[.title:focus-visible]:ring-2 has-[.title:focus-visible]:ring-foreground/60',
+].join(' ');
+const tabs = ['Discover', 'Browse', 'Top rated', 'New', 'Consoles'];
+---
+
+<section id="features" class="features" aria-labelledby="features-title">
+  <h2 id="features-title">Built to feel like the rest of Steam</h2>
+  <div class="grid">
+    <Card class={`${card} col-span-2 max-[600px]:col-span-1`}>
+      <div class="lead">
+        <div class="text">
+          <span class="mark"><Glyph name="store" /></span>
+          <h3><a class="title" href={`${base}/docs/guides/store/`}>A store, not a file list</a></h3>
+          <p>Your RomM library laid out like Steam's own store pages, made for a controller. Search,
+            filter by console or genre, or show only what is already on the device.</p>
+          <ul class="chips" aria-label="Store tabs">
+            {tabs.map(t => <li><Badge variant="secondary" size="sm" class="font-semibold select-none">{t}</Badge></li>)}
+          </ul>
+        </div>
+        <ol class="flow" aria-label="Where the store's content comes from">
+          <li><b>RomM</b><span>games, descriptions, ratings</span></li>
+          <li><b>SteamGridDB</b><span>box art, banners, logos, icons</span></li>
+          <li><b>Trailers</b><span>muted, streamed in place</span></li>
+        </ol>
+      </div>
+    </Card>
+
+    <Card class={card}>
+      <span class="mark"><Glyph name="library" /></span>
+      <h3><a class="title" href={`${base}/docs/guides/store/#in-your-steam-library`}>Real library entries</a></h3>
+      <p>An installed game is a Steam shortcut with its artwork. It sits in Settings &gt; Storage with its size and has
+        Uninstall in its menu, like any other game.</p>
+    </Card>
+
+    <Card class={card}>
+      <span class="mark"><Glyph name="download" /></span>
+      <h3><a class="title" href={`${base}/docs/guides/store/#downloads`}>Downloads that resume</a></h3>
+      <p>One at a time, in queue order, on Steam's Downloads page. Each file resumes from where it stopped, so a
+        reboot halfway through costs nothing.</p>
+    </Card>
+
+    <Card class={card}>
+      <span class="mark"><Glyph name="pad" /></span>
+      <h3><a class="title" href={`${base}/docs/guides/emulators/`}>Emulators, installed for you</a></h3>
+      <p>Nine emulators, each pinned to a build that was tested with boilerRomM and checked after download. Fullscreen,
+        save folders and paths are set up for you. Pick another version any time.</p>
+    </Card>
+
+    <Card class={card}>
+      <span class="mark"><Glyph name="chip" /></span>
+      <h3><a class="title" href={`${base}/docs/guides/emulators/#bios-and-firmware`}>Firmware from your server</a></h3>
+      <p>BIOS and firmware files you uploaded to RomM are installed into the emulator that needs them. Files are
+        recognised by their contents, not their names.</p>
+    </Card>
+
+    <Card class={`${card} col-span-full`}>
+      <div class="lead">
+        <div class="text">
+          <span class="mark"><Glyph name="qr" /></span>
+          <h3><a class="title" href={`${base}/docs/setup/#pair-this-device`}>No password typed on the Deck</a></h3>
+          <p>Pairing uses RomM's device code sign-in: scan a QR code with your phone, sign in there and approve. The
+            device keeps only a token, in a file only it can read.</p>
+        </div>
+        <ol class="flow" aria-label="How pairing works">
+          <li><b>Scan</b><span>the code on screen with your phone</span></li>
+          <li><b>Sign in</b><span>to your RomM, on your phone</span></li>
+          <li><b>Approve</b><span>this device, and you're in</span></li>
+        </ol>
+      </div>
+    </Card>
+  </div>
+</section>
+
+<style>
+  .features { padding-block: 40px 56px; }
+  .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+  @media (max-width: 900px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 600px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+
+  /* Only translate and opacity change on hover, so the browser composites it on the GPU instead of repainting a blurred box-shadow every frame. */
+  .grid :global(.bento-card) { transition: translate 0.15s ease-in-out; will-change: translate; }
+  .grid :global(.bento-card)::after {
+    content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; opacity: 0;
+    box-shadow: 0 0 0 1px var(--feature-hover-ring), 0 18px 40px -14px var(--feature-hover-shadow);
+    transition: opacity 0.15s ease-in-out;
+  }
+  @media (hover: hover) {
+    .grid :global(.bento-card:hover) { translate: 0 -4px; }
+    .grid :global(.bento-card:hover)::after { opacity: 1; }
+  }
+
+  .lead { display: flex; gap: 28px; align-items: center; flex-wrap: wrap; }
+  .text { flex: 1 1 280px; min-width: 0; }
+  .mark {
+    display: inline-grid; place-items: center; width: 42px; height: 42px; margin-bottom: 14px; border-radius: 12px;
+    color: var(--feature-mark-fg); background: var(--feature-mark-bg); border: 1px solid var(--border);
+  }
+  .mark :global(svg) { width: 22px; height: 22px; }
+  h3 { margin: 0 0 6px; font: 600 1.1rem/1.3 var(--display); letter-spacing: -0.01em; }
+  .text h3 { font-size: 1.3rem; }
+  .title { color: inherit; text-decoration: none; outline: none; }
+  .title::after { content: ''; position: absolute; inset: 0; z-index: 1; border-radius: inherit; }
+  p { margin: 0; color: var(--muted-foreground); }
+
+  .chips { list-style: none; margin: 16px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+  .flow {
+    flex: 0 1 250px; list-style: none; margin: 0; padding: 4px 0 4px 2px; display: grid; gap: 18px; position: relative;
+  }
+  .flow::before { content: ''; position: absolute; left: 13px; top: 18px; bottom: 18px; width: 2px; background: var(--border); }
+  .flow li { position: relative; padding-left: 40px; display: grid; gap: 1px; line-height: 1.35; }
+  .flow li::before {
+    content: ''; position: absolute; left: 7px; top: 0.35em; width: 10px; height: 10px; border-radius: 50%;
+    background: var(--primary); outline: 4px solid var(--card);
+  }
+  .flow span { color: var(--muted-foreground); font-size: 0.92rem; }
+</style>
