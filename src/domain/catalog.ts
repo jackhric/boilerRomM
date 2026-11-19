@@ -12,15 +12,24 @@ export interface Row {
 
 const ROW_LIMIT = 24;
 
+// A library can hold several copies of one game (regions, revisions, discs); a shelf shows the first of each.
+export function distinct(games: Game[]): Game[] {
+  const seen = new Set<string>();
+  return games.filter((g) => {
+    const name = g.name.trim().toLowerCase();
+    return !seen.has(name) && !!seen.add(name);
+  });
+}
+
 function recentRow(games: Game[]): Row | undefined {
-  const recent = [...games].sort((a, b) => b.added_at.localeCompare(a.added_at)).slice(0, ROW_LIMIT);
+  const recent = distinct([...games].sort((a, b) => b.added_at.localeCompare(a.added_at))).slice(0, ROW_LIMIT);
   return recent.length ? { key: "recent", title: "Recently added", subtitle: "New on your RomM server", games: recent } : undefined;
 }
 
 /** "Top rated" and "On this Device", the rows below the personal ones. */
 function laterRows(games: Game[]): Row[] {
   const rows: Row[] = [];
-  const rated = topRated(games).slice(0, ROW_LIMIT);
+  const rated = distinct(topRated(games)).slice(0, ROW_LIMIT);
   if (rated.length) rows.push({ key: "rated", title: "Top rated", subtitle: "Best reviewed in the library", games: rated });
   const installed = games.filter((g) => g.status === "installed");
   if (installed.length) rows.push({ key: "installed", title: "On this Device", subtitle: `${installed.length} ready to play`, games: installed });
@@ -30,16 +39,9 @@ function laterRows(games: Game[]): Row[] {
 /** Recommendations resolved against the library (RomM may recommend a game the snapshot no longer has). */
 function resolve(games: Game[], recs: Recommendation[]): [Game, Recommendation][] {
   const byId = new Map(games.map((g) => [g.rom_id, g]));
-  const seen = new Set<number>();
-  const out: [Game, Recommendation][] = [];
-  for (const r of recs) {
-    const g = byId.get(r.rom_id);
-    if (g && !seen.has(g.rom_id)) {
-      seen.add(g.rom_id);
-      out.push([g, r]);
-    }
-  }
-  return out.slice(0, ROW_LIMIT);
+  const byRom = new Map(recs.map((r) => [r.rom_id, r]));
+  const found = recs.map((r) => byId.get(r.rom_id)).filter((g): g is Game => !!g);
+  return distinct(found).slice(0, ROW_LIMIT).map((g) => [g, byRom.get(g.rom_id)!]);
 }
 
 /** "genre: Platform" -> "Genre: Platform". */
@@ -150,7 +152,7 @@ export function storeModel(games: Game[], platforms: Platform[], recommended: Re
     forYou: forYouRow(games, recommended),
     rated: later.find((r) => r.key === "rated"),
     installed: later.find((r) => r.key === "installed"),
-    featured: [...kept, ...drawn].slice(0, FEATURED),
+    featured: distinct([...kept, ...drawn]).slice(0, FEATURED),
     consoles: platforms.filter((p) => counts.get(p.id)).map((p) => ({
       platform: p,
       count: counts.get(p.id) ?? 0,

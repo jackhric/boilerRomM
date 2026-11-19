@@ -86,6 +86,16 @@ describe("catalog", () => {
     expect(storeModel([], [], [], 7).featured).toEqual([]);
   });
 
+  it("shows one copy of a game on a shelf however many the library holds", () => {
+    const copies = rated(40).map((g, i) => (i < 6 ? { ...g, name: "Castlevania" } : g));
+    const m = storeModel(copies, [], [], 7);
+    for (const shelf of [m.featured, m.rated!.games, m.recent!.games]) {
+      const names = shelf.map((g) => g.name);
+      expect(new Set(names).size).toBe(names.length);
+    }
+    expect(m.games).toHaveLength(40);
+  });
+
   it("keeps the featured picks it is given when art arrives for other games", () => {
     const all = rated(90);
     const few = all.map((g, i) => (i < 40 ? g : { ...g, art: { ...g.art, hero: "" } }));
@@ -97,7 +107,7 @@ describe("catalog", () => {
   });
 
   it("turns RomM's recommendations into a row, skipping games the library no longer has", () => {
-    const games = [game({ rom_id: 1 }), game({ rom_id: 2 })];
+    const games = [game({ rom_id: 1, name: "A" }), game({ rom_id: 2, name: "B" })];
     const recs = [
       { rom_id: 9, score: 1, reasons: [] },
       { rom_id: 2, score: 0.5, reasons: ["genre: Platform"], seed_rom_name: "Super Mario World" },
