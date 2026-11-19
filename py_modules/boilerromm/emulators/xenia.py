@@ -7,8 +7,8 @@ import re
 import tempfile
 import tomllib
 
-from ..releases import Source
 from .base import Command, Emulator
+from .releases import Source
 
 # Canary publishes a release per commit, tagged with the short commit hash; there are no version numbers.
 TAG = "79aee12"

@@ -9,10 +9,7 @@ import { installReloadGuard, Undo } from "../core/tweak";
 
 export type { Backend } from "./client";
 export type { OurDownload } from "./inject";
-export type { Mode, Status } from "./coexist";
-export { breakNextPush, getStatus, onStatus, retry, setDownloads, takeLaunchRequest } from "./coexist";
-export { activeTweaks, restoreAll } from "../core/tweak";
-export { ensureArt } from "../art";
+export { setDownloads, takeLaunchRequest } from "./coexist";
 
 /** Installs the bridge; feed it with setDownloads(). The undo (or restoreAll) puts Steam back as it was. */
 export function installDownloadsBridge(backend: Backend, onCall?: (method: string, appid: number | undefined, ours: boolean) => void): Undo {

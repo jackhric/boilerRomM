@@ -8,7 +8,7 @@ RomM is a FastAPI app, so every server publishes its own schema:
 
 Refresh the copy with `curl -sS https://<romm>/openapi.json -o docs/romm-openapi.json`.
 
-## What boilerRomM calls (`py_modules/boilerromm/romm.py`)
+## What boilerRomM calls (`py_modules/boilerromm/romm/client.py`)
 
 | Call | Purpose |
 | --- | --- |

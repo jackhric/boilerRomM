@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { FaDownload } from "react-icons/fa";
 import { EmulatorInfo, EmulatorVersion, emulatorVersions, installEmulator, resetEmulator, State, uninstallEmulator } from "../../api";
 import { emulatorLogo } from "../emulatorLogos";
+import { run } from "./common";
 import { RowButton, RowControls, RowFill, RowMoreButton, SettingsList, SettingsRow } from "../kit/settings";
 
 const BUSY_TEXT: Record<Exclude<EmulatorInfo["busy"], "">, string> = { queued: "Waiting to install…", installing: "Installing…", uninstalling: "Uninstalling…", resetting: "Resetting…", fetching: "Getting BIOS…" };
@@ -12,8 +13,6 @@ function subtitle(e: EmulatorInfo): string {
   const state = e.busy ? BUSY_TEXT[e.busy] : !e.installed ? "Not installed" : e.firmware ? e.version_name : `${e.version_name}  ·  needs ${e.requires}`;
   return [e.system, state].filter(Boolean).join("  ·  ");
 }
-
-const run = (call: () => Promise<unknown>) => () => void call().catch(() => {});
 
 function confirmReset(e: EmulatorInfo) {
   showModal(

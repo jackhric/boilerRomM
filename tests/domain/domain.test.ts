@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { applyFilters, forYouRow, NO_FILTERS, rotate, sortGames, storeModel, tagsOf } from "../../src/domain/catalog";
 import { formatAgo, formatDate, formatHours, formatSize, percent, scoreWord } from "../../src/domain/format";
 import { ACTION_LABELS, actionKind, canRemove, statusText } from "../../src/domain/status";
+import { describeProblem } from "../../src/domain/problem";
 import { game, rated } from "./fixtures";
 
 describe("status", () => {
@@ -113,5 +114,41 @@ describe("catalog", () => {
     const details: any = { genres: ["Platform"], themes: ["Action", ""], perspectives: ["Side view"], franchises: ["Platform"] };
     expect(tagsOf(game({ genres: ["Platform"] }), details)).toEqual(["Platform", "Action", "Side view"]);
     expect(tagsOf(game({ genres: ["Racing"] }))).toEqual(["Racing"]);
+  });
+});
+
+describe("describeProblem", () => {
+  const kind = (raw: string) => describeProblem(raw).kind;
+
+  it("says the server cannot be reached for network failures", () => {
+    for (const raw of [
+      "Cannot connect to host roms.example.com:443 ssl:default [Temporary failure in name resolution]",
+      "Cannot reach https://romm.local: Connection refused",
+      "Nothing answered at romm.local",
+      "TimeoutError",
+      "Timeout on reading data from socket",
+    ]) expect(kind(raw)).toBe("unreachable");
+    expect(describeProblem("TimeoutError").title).toBe("Can't reach your RomM server");
+  });
+
+  it("says the device is signed out for 401 and 403", () => {
+    expect(kind("401 Unauthorized")).toBe("signed-out");
+    expect(kind("403 Forbidden")).toBe("signed-out");
+    expect(kind("RomM no longer accepts this device; disconnect and pair again")).toBe("signed-out");
+  });
+
+  it("says the server had a problem for 5xx", () => {
+    expect(kind("502 Bad Gateway")).toBe("server");
+    expect(kind("HTTP 500")).toBe("server");
+  });
+
+  it("falls back to a generic title, and keeps the raw text as the detail", () => {
+    const p = describeProblem("  KeyError: 'id'  ");
+    expect(p).toEqual({ kind: "other", title: "Something went wrong", detail: "KeyError: 'id'" });
+    expect(describeProblem(undefined).detail).toBe("");
+  });
+
+  it("does not mistake a number inside a longer one for a status", () => {
+    expect(kind("failed after 4031 bytes")).toBe("other");
   });
 });

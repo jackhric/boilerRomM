@@ -3,7 +3,7 @@ import { DialogButton } from "@decky/ui";
 import { Component, ReactNode } from "react";
 import { tweak, Undo, warnOnce } from "../core/tweak";
 
-export const DOWNLOADS_ROUTE = "/library/downloads";
+const DOWNLOADS_ROUTE = "/library/downloads";
 
 type Props = { children: ReactNode; onError(): void; onRetry(): void };
 

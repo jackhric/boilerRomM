@@ -1,9 +1,7 @@
 import os
 
 import pytest
-
-from boilerromm import inifile
-from boilerromm.emulators import Layout
+from boilerromm.emulators import Layout, inifile
 from boilerromm.emulators.lichii import SEEDED, TAG, Lichii
 
 KEYS = b"# dumped keys\nheader_key = " + b"0f" * 32 + b"\nmaster_key_00 = " + b"1e" * 16 + b"\n"

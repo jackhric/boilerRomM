@@ -4,11 +4,10 @@ import logging
 import os
 
 import pytest
-
 from boilerromm.app import App
-from boilerromm.artwork import ArtCache, ArtPrefetch
-from boilerromm.library import Game
-from boilerromm.sgdb import API, SgdbClient, SgdbError, best_icon, image_format
+from boilerromm.romm.library import Game
+from boilerromm.sgdb.artwork import ArtCache, ArtPrefetch
+from boilerromm.sgdb.client import API, SgdbClient, SgdbError, best_icon, image_format
 
 KEY = "secret-key-123"
 PNG = b"\x89PNG\r\n\x1a\n" + b"p" * 20

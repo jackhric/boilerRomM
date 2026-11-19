@@ -11,7 +11,8 @@ function line(b: BiosFolder, several: boolean) {
 function Entry({ e, canFetch }: { e: EmulatorInfo; canFetch: boolean }) {
   const subtitle = (
     <>
-      <div>Needs {e.requires}</div>
+      {/* Ready without its files: they are for some games only (Cemu and disc images). */}
+      <div>{e.firmware && !e.bios.every((b) => b.ready) ? "Optional: " : "Needs "}{e.requires}</div>
       {e.bios.map((b) => <div key={b.platform}>{line(b, e.bios.length > 1)}</div>)}
     </>
   );

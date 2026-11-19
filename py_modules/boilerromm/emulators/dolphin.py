@@ -1,28 +1,13 @@
 """Dolphin (GameCube and Wii), run from pkgforge-dev's AppImage: the Dolphin project publishes none of its own."""
 import os
 
-from .. import inifile
-from ..releases import Source
-from .base import Command, Emulator
+from . import inifile
+from .base import Command, Emulator, link_dir
+from .releases import Source
 
 # pkgforge-dev builds each Dolphin release again every three weeks, with newer libraries, and tags every build
 # "<Dolphin version>@<build date>_<build time>".
 TAG = "2609a@2026-11-01_1793557796"
-
-
-def _link(link: str, target: str) -> None:
-    os.makedirs(target, exist_ok=True)
-    os.makedirs(os.path.dirname(link), exist_ok=True)
-    if os.path.islink(link):
-        if os.readlink(link) == target:
-            return
-        os.unlink(link)
-    elif os.path.isdir(link):
-        try:
-            os.rmdir(link)
-        except OSError:
-            return  # Dolphin already keeps files here: they stay where they work
-    os.symlink(target, link)
 
 
 class Dolphin(Emulator):
@@ -49,7 +34,7 @@ class Dolphin(Emulator):
 
     def configure(self) -> None:
         # Dolphin has no setting for its save state folder, and keeps the states of both consoles in it.
-        _link(os.path.join(self.data_dir, "StateSaves"), self.layout.states("ngc", self.id))
+        link_dir(os.path.join(self.data_dir, "StateSaves"), self.layout.states("ngc", self.id))
         memory_cards = self.layout.saves("ngc", self.id)
         inifile.update(
             self.ini,

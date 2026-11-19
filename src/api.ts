@@ -195,7 +195,6 @@ export const getState = callable<[], State>("get_state");
 export const setServer = callable<[url: string], State>("set_server");
 export const checkConnection = callable<[], ConnectionCheck>("check_connection");
 export const startPairing = callable<[], State>("start_pairing");
-export const cancelPairing = callable<[], State>("cancel_pairing");
 export const disconnect = callable<[], State>("disconnect");
 export const resetEverything = callable<[], State>("reset");
 export const refreshLibrary = callable<[], State>("refresh_library");
@@ -211,7 +210,6 @@ export const coverBase64 = callable<[rom_id: number], { base64: string; format: 
 export const saveIcon = callable<[rom_id: number, base64: string], string>("save_icon");
 /** An invalid key leaves `sgdb.configured` false with `sgdb.error` set; it does not throw. */
 export const setSgdbKey = callable<[key: string], State>("set_sgdb_key");
-export const clearSgdbKey = callable<[], State>("clear_sgdb_key");
 /** Follows the page opened in Steam's browser (SGDB_SIGN_IN) until the key is saved or it fails. */
 export const startSgdbSignin = callable<[], State>("start_sgdb_signin");
 export const cancelSgdbSignin = callable<[], State>("cancel_sgdb_signin");
@@ -227,8 +225,6 @@ export const SGDB_SIGN_IN =
 export const gameArt = callable<[rom_id: number], GameArt>("game_art");
 export const artBase64 = callable<[rom_id: number, kind: ArtKind], ArtBytes>("art_base64");
 export const setShortcut = callable<[rom_id: number, appid: number], State>("set_shortcut");
-/** Fetches RomM's file list for the game again and checks the disk against it. */
-export const verifyGame = callable<[rom_id: number], State>("verify");
 export const removeGame = callable<[rom_id: number], State & { removed: number }>("remove");
 /** Queues a download for a game whose Steam shortcut is `appid` (0 for none). */
 export const queueDownload = callable<[rom_id: number, appid: number], State>("download");

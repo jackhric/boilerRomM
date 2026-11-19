@@ -78,8 +78,8 @@ def test_the_launcher_says_why_when_there_is_no_emulator_to_run_a_game(tmp_path)
 
 def test_each_platform_goes_to_the_emulator_that_runs_it(tmp_path):
     app = make_app(tmp_path)
-    picks = {slug: app.emulator_for(slug).id for slug in ("psx", "snes", "ps2", "ngc", "wii", "ps3", "ps4", "ps5", "xbox360", "switch", "switch2")}
-    assert picks == {"psx": "retroarch", "snes": "retroarch", "ps2": "pcsx2", "ngc": "dolphin", "wii": "dolphin", "ps3": "rpcs3",
+    picks = {slug: app.emulator_for(slug).id for slug in ("psx", "snes", "ps2", "ngc", "wii", "wiiu", "ps3", "ps4", "ps5", "xbox360", "switch", "switch2")}
+    assert picks == {"psx": "retroarch", "snes": "retroarch", "ps2": "pcsx2", "ngc": "dolphin", "wii": "dolphin", "wiiu": "cemu", "ps3": "rpcs3",
                      "ps4": "shadps4", "ps5": "kyty", "xbox360": "xenia", "switch": "lichii", "switch2": "lichii"}
     assert app.emulator_for("dreamcast") is None
 

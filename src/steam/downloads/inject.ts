@@ -65,7 +65,7 @@ const CAPTURED_ITEM: DownloadItem = {
 export const clone = <T>(x: T): T => JSON.parse(JSON.stringify(x));
 
 /** Same keys and value types, recursively; arrays the same length. */
-export function sameShape(a: unknown, b: unknown, path = "$"): string | undefined {
+function sameShape(a: unknown, b: unknown, path = "$"): string | undefined {
   if (Array.isArray(a) || Array.isArray(b)) {
     if (!Array.isArray(a) || !Array.isArray(b)) return `${path}: array mismatch`;
     if (a.length !== b.length) return `${path}: length ${a.length} != ${b.length}`;

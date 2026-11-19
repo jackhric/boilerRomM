@@ -6,11 +6,9 @@ import subprocess
 import zipfile
 
 import pytest
-
-from boilerromm import releases
-from boilerromm.emulators import Layout
+from boilerromm.emulators import Layout, releases
 from boilerromm.emulators.shadps4 import RUN_FROM, TAG, ShadPs4
-from boilerromm.install import Target
+from boilerromm.games.install import Target
 
 SELF = b"\x4f\x15\x3d\x1d" + b"module"
 APPIMAGE = b"\x7fELF" + b"a" * 5000

@@ -16,7 +16,7 @@ const LOCAL_FILES = "localfiles";
 const MAX_DEPTH = 3;
 
 /** Steam's Storage page counts in 1024s and still writes GB; this matches it. */
-export function formatBytes(bytes: number): string {
+function formatBytes(bytes: number): string {
   const units = ["B", "KB", "MB", "GB", "TB"];
   let n = bytes;
   let u = 0;
@@ -62,7 +62,7 @@ const TREE_DEPTH = 6;
  * A copy of a rendered tree with the first element `swap` answers for replaced; Steam's own elements are never
  * written to, and the same tree comes back when nothing was swapped.
  */
-export function swapInTree(node: any, swap: (el: any) => any, depth = TREE_DEPTH): any {
+function swapInTree(node: any, swap: (el: any) => any, depth = TREE_DEPTH): any {
   if (depth < 0 || !node || typeof node !== "object") return node;
   if (Array.isArray(node)) {
     const out = node.map((n) => swapInTree(n, swap, depth));

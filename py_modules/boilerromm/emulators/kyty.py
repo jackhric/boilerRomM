@@ -6,10 +6,10 @@ import shutil
 import tarfile
 import zlib
 
-from .. import releases
-from ..install import Target, launch_file
-from ..releases import Source
+from ..games.install import Target, launch_file
+from . import releases
 from .base import Command, Emulator
+from .releases import Source
 from .rpcs3 import _link
 
 # KytyPS5 publishes a release per commit to main, several a day, tagged with the day and the commit; not every one

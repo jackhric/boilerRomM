@@ -1,7 +1,7 @@
 """Which Steam shortcut belongs to which game. Steam creates shortcuts (frontend only); this remembers the appids."""
 import json
 
-from . import jsonfile
+from .. import jsonfile
 
 
 class ShortcutMap:

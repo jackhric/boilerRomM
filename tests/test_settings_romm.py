@@ -1,6 +1,6 @@
 import os
 
-from boilerromm.romm import RommError, normalize_url, parse_version
+from boilerromm.romm.client import RommError, normalize_url, parse_version
 from boilerromm.settings import Settings, SettingsStore
 
 

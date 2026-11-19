@@ -2,9 +2,7 @@ import hashlib
 import os
 
 import pytest
-
-from boilerromm import inifile, releases
-from boilerromm.emulators import Layout, Pcsx2, for_platform
+from boilerromm.emulators import Layout, Pcsx2, for_platform, inifile, releases
 from boilerromm.emulators.pcsx2 import BIOS, TAG
 
 BUILD = b"\x7fELF" + b"b" * 5000
@@ -337,7 +335,7 @@ async def test_install_all_reports_progress_and_one_failure_does_not_stop_the_re
     app = App(str(tmp_path / "settings.json"), "1", str(tmp_path), emit, logging.getLogger("t"),
               data_dir=str(tmp_path / "data"), release_session_factory=Session)
     app._progress_sent = -1.0
-    monkeypatch.setattr("boilerromm.app.time.monotonic", lambda: 10.0 + len(states))
+    monkeypatch.setattr("time.monotonic", lambda: 10.0 + len(states))
 
     first = await app.emulators_install_all()
     assert {e["id"]: e["busy"] for e in first["emulators"]} == {"fine": "queued", "broken": "queued", "later": "queued"}

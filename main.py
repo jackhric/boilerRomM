@@ -1,8 +1,9 @@
 import json
 import os
 
-import decky
 from boilerromm.app import App
+
+import decky
 
 
 def _version() -> str:
@@ -37,9 +38,6 @@ class Plugin:
 
     async def start_pairing(self) -> dict:
         return await self.app.start_pairing()
-
-    async def cancel_pairing(self) -> dict:
-        return await self.app.cancel_pairing()
 
     async def disconnect(self) -> dict:
         return await self.app.disconnect()
@@ -76,9 +74,6 @@ class Plugin:
 
     async def remove(self, rom_id: int) -> dict:
         return await self.app.remove(rom_id)
-
-    async def verify(self, rom_id: int) -> dict:
-        return await self.app.verify(rom_id)
 
     async def download_control(self, action: str, appid: int = 0, value: int = 0) -> dict:
         return await self.app.download_control(action, appid, value)
@@ -118,9 +113,6 @@ class Plugin:
 
     async def cancel_sgdb_signin(self) -> dict:
         return await self.app.cancel_sgdb_signin()
-
-    async def clear_sgdb_key(self) -> dict:
-        return await self.app.clear_sgdb_key()
 
     async def game_art(self, rom_id: int) -> dict:
         return await self.app.game_art(rom_id)

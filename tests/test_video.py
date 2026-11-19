@@ -1,5 +1,5 @@
 
-from boilerromm.video import VideoResolver, expires_at, pick_audio, pick_stream
+from boilerromm.games.video import VideoResolver, expires_at, pick_audio, pick_stream
 
 FORMATS = [
     {"format_id": "18", "url": "u18", "ext": "mp4", "vcodec": "avc1.42001E", "acodec": "mp4a.40.2", "protocol": "https", "height": 360},

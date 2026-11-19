@@ -4,7 +4,7 @@ import time
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 
-from .romm import RommClient, RommError
+from .client import RommClient, RommError
 
 SCOPES = [
     "me.read", "roms.read", "platforms.read", "assets.read", "firmware.read", "collections.read",

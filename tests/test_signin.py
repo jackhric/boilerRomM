@@ -1,10 +1,9 @@
 import json
 import logging
 
-
-from boilerromm import signin as signin_mod
 from boilerromm.app import App
-from boilerromm.signin import JS_CREATE, JS_PREFS, OPENID_URL, SgdbSignin
+from boilerromm.sgdb import signin as signin_mod
+from boilerromm.sgdb.signin import JS_CREATE, JS_PREFS, OPENID_URL, SgdbSignin
 
 KEY = "0" * 32
 SGDB = "https://www.steamgriddb.com/"

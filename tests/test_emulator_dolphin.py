@@ -1,9 +1,7 @@
 import os
 
 import pytest
-
-from boilerromm import inifile, releases
-from boilerromm.emulators import Layout
+from boilerromm.emulators import Layout, inifile, releases
 from boilerromm.emulators.dolphin import TAG, Dolphin
 
 BUILD = b"\x7fELF" + b"d" * 5000

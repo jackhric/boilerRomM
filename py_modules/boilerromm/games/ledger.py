@@ -19,7 +19,7 @@ import os
 import time
 from dataclasses import asdict, dataclass, field, fields
 
-from . import jsonfile
+from .. import jsonfile
 
 VERSION = 1
 QUEUED, DOWNLOADING, PAUSED, INCOMPLETE, FAILED, INSTALLED = "queued", "downloading", "paused", "incomplete", "failed", "installed"

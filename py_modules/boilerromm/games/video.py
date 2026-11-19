@@ -32,7 +32,7 @@ with yt_dlp.YoutubeDL(options) as ydl:
 keys = ("url", "ext", "vcodec", "acodec", "protocol", "height", "abr")
 json.dump({"formats": [{k: f.get(k) for k in keys} for f in info.get("formats") or []]}, sys.stdout)
 """
-_MODULES_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_MODULES_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 _LOADER_ENV = ("LD_LIBRARY_PATH", "PYTHONHOME", "PYTHONPATH")
 
 

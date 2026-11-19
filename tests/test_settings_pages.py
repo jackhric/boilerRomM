@@ -3,10 +3,9 @@ import logging
 import os
 
 import pytest
-
 from boilerromm.app import App
 from boilerromm.emulators.rpcs3 import PUP_MAGIC
-from boilerromm.romm import RommError
+from boilerromm.romm.client import RommError
 
 PUP = PUP_MAGIC + b"firmware"
 
@@ -78,7 +77,7 @@ async def test_a_refused_token_and_an_old_or_absent_server_are_told_apart(app):
 
 
 def test_storage_counts_installed_games_and_the_drive_of_the_rom_folder(app, tmp_path):
-    from boilerromm.ledger import INSTALLED, QUEUED, Install
+    from boilerromm.games.ledger import INSTALLED, QUEUED, Install
 
     # The folder does not exist yet: the drive of its nearest existing parent is reported.
     app.location.roms_dir = str(tmp_path / "later" / "roms")
@@ -134,12 +133,12 @@ async def test_bios_from_romm_needs_a_signed_in_device(app):
 
 def test_the_bios_folder_of_each_emulator_that_needs_one(app):
     needing = {e.id: [b["platform"] for b in e.status()["bios"]] for e in app.emulators.values()}
-    assert needing == {"retroarch": ["saturn", "segacd", "3do"], "pcsx2": ["ps2"], "dolphin": [], "rpcs3": ["ps3"], "shadps4": ["ps4"],
+    assert needing == {"retroarch": ["saturn", "segacd", "3do"], "pcsx2": ["ps2"], "dolphin": [], "cemu": ["wiiu"], "rpcs3": ["ps3"], "shadps4": ["ps4"],
                        "kyty": [], "xenia": [], "lichii": ["switch"]}
 
 
 def _game(rom_id, slug, platform):
-    from boilerromm.library import Game
+    from boilerromm.romm.library import Game
 
     return Game(rom_id=rom_id, name="G", platform_id=1, platform=platform, slug=slug, fs_name="g.iso", single_file=True, size_bytes=1, cover="")
 

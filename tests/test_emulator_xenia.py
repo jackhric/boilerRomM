@@ -2,7 +2,6 @@ import os
 import tomllib
 
 import pytest
-
 from boilerromm.emulators import Layout
 from boilerromm.emulators.xenia import GAMERTAG, TAG, XUID, Xenia, account_file, read_account
 

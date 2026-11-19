@@ -13,8 +13,8 @@ import tempfile
 import time
 from collections.abc import Callable, Iterable
 
-from . import jsonfile
-from .sgdb import KINDS, SgdbClient, SgdbError, title_key
+from .. import jsonfile
+from .client import KINDS, SgdbClient, SgdbError, title_key
 
 EMPTY = {k: "" for k in KINDS}
 FORMATS = ("png", "jpg", "webp")

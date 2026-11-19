@@ -6,10 +6,10 @@ import shutil
 import tempfile
 import zipfile
 
-from .. import releases
-from ..install import Target, launch_file
-from ..releases import Source
+from ..games.install import Target, launch_file
+from . import releases
 from .base import Command, Emulator, Firmware
+from .releases import Source
 
 TAG = "v.0.21.0"
 NIGHTLY = "Pre-release-shadPS4-"

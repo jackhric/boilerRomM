@@ -1,9 +1,9 @@
 """PCSX2 (PlayStation 2), run from the project's own AppImage."""
 import os
 
-from .. import inifile
-from ..releases import Source
+from . import inifile
 from .base import Command, Emulator, Firmware
+from .releases import Source
 
 # PCSX2 shows its setup wizard, or asks to reset everything, unless the config carries the settings version this
 # build expects. The two are pinned together: check SETTINGS_VERSION in pcsx2/VMManager.cpp when moving the tag.

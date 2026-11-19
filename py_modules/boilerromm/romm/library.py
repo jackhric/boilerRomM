@@ -2,8 +2,8 @@
 import time
 from dataclasses import dataclass, field
 
-from .romm import RommClient
-from .sgdb import KINDS as ART_KINDS
+from ..sgdb.client import KINDS as ART_KINDS
+from .client import RommClient
 
 
 def _score(value) -> int | None:
@@ -121,7 +121,7 @@ class Library:
             except Exception:
                 self.recommended = []  # an optional feed: the storefront just hides the row
         except Exception as e:
-            self.error = str(e)
+            self.error = str(e) or type(e).__name__
         finally:
             self.loading = False
 

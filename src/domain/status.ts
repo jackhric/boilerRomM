@@ -4,7 +4,7 @@ import { formatSize, percent } from "./format";
 
 export const isBusy = (g: Game) => g.status === "queued" || g.status === "downloading";
 /** Stopped short of installed: Resume continues it, Remove clears it. */
-export const isStopped = (status: GameStatus) => status === "paused" || status === "incomplete" || status === "failed";
+const isStopped = (status: GameStatus) => status === "paused" || status === "incomplete" || status === "failed";
 const STOPPED_TEXT: Record<"paused" | "incomplete" | "failed", string> = { paused: "Paused", incomplete: "Partly downloaded", failed: "Download failed" };
 
 export type ActionKind = "download" | "resume" | "stop" | "play";

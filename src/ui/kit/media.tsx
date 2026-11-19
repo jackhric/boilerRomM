@@ -46,7 +46,7 @@ const CHROME = 220;
 const END_GUARD_S = 14;
 
 /** A muted, looping video that fills its box and starts a quarter of the way in. It never takes focus. */
-export function Trailer({ source, onVisible }: { source: VideoSource; onVisible?: (visible: boolean) => void }) {
+function Trailer({ source, onVisible }: { source: VideoSource; onVisible?: (visible: boolean) => void }) {
   const [broken, setBroken] = useState(false);
   if (source.kind === "file" && !broken) {
     return (
@@ -239,7 +239,7 @@ export function HeroArt({ src, height, video, playVideo = true, fadeTo, shadeLef
 export type ViewerItem = { kind: "image"; src: string } | { kind: "video"; source: VideoSource };
 
 /** Opens pictures and videos over the whole screen; left and right (or the bumpers) flip through them. */
-export function openViewer(items: ViewerItem[], start: number, title: string, logo?: string) {
+function openViewer(items: ViewerItem[], start: number, title: string, logo?: string) {
   if (items.length) showModal(<Viewer items={items} start={start} title={title} logo={logo} />);
 }
 

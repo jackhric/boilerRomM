@@ -3,10 +3,10 @@ import json
 import os
 import shutil
 
-from .. import inifile
-from ..install import Target, launch_file
-from ..releases import Source
+from ..games.install import Target, launch_file
+from . import inifile
 from .base import Command, Emulator, Firmware
+from .releases import Source
 
 # RPCS3 publishes one release per commit, tagged with the commit. This one is 0.0.43-20623.
 TAG = "build-0ebb63697666a54b44a4de69ef222c4ecee0001a"

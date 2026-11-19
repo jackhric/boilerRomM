@@ -112,19 +112,10 @@ export function downloadsApi(): DownloadsApi | undefined {
   return API_METHODS.every((m) => isFn(d[m])) ? d : undefined;
 }
 
-export function appName(appid: number): string | undefined {
-  try {
-    const name = (window as any).appStore?.GetAppOverviewByAppID?.(appid)?.display_name;
-    return typeof name === "string" ? name : undefined;
-  } catch {
-    return undefined;
-  }
-}
-
 const isNum = (x: unknown): x is number => typeof x === "number" && Number.isFinite(x);
 const isBool = (x: unknown) => typeof x === "boolean";
 
-export function isProgress(p: any): p is Progress {
+function isProgress(p: any): p is Progress {
   return !!p && isNum(p.bytes_in_progress) && isNum(p.bytes_total) && isNum(p.estimated_time_remaining_sec);
 }
 

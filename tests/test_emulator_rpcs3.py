@@ -4,11 +4,9 @@ import re
 import subprocess
 
 import pytest
-
-from boilerromm import inifile
-from boilerromm.emulators import Layout
+from boilerromm.emulators import Layout, inifile
 from boilerromm.emulators.rpcs3 import INSTALL_THEN_RUN, PUP_MAGIC, TAG, Rpcs3
-from boilerromm.install import Target
+from boilerromm.games.install import Target
 
 PUP = PUP_MAGIC + b"the rest of a firmware update"
 

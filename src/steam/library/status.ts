@@ -14,7 +14,7 @@ const HOOK = "play-button";
 export const DOWNLOADING = 7;
 export const READY_TO_LAUNCH = 11;
 export const DOWNLOAD_PAUSED = 22;
-export const DOWNLOAD_QUEUED = 23;
+const DOWNLOAD_QUEUED = 23;
 const OURS = new Set([DOWNLOADING, DOWNLOAD_PAUSED, DOWNLOAD_QUEUED]);
 
 const STATUS: Record<string, number | undefined> = {

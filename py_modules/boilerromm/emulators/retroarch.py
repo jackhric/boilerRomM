@@ -7,9 +7,9 @@ import tempfile
 import zipfile
 import zlib
 
-from .. import releases
-from ..sevenzip import ArchiveError, extract_7z
+from . import releases
 from .base import Command, Emulator, Firmware, md5_of
+from .sevenzip import ArchiveError, extract_7z
 
 # libretro publishes no checksum for its builds, so the pinned one carries the size and checksum it had when it was
 # tested. Cores exist only as nightly builds, the same ones RetroArch's own updater fetches: they cannot be pinned.

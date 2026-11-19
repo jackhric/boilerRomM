@@ -2,10 +2,9 @@ import asyncio
 import os
 
 import pytest
-
-from boilerromm.downloads import Downloader
-from boilerromm.install import InstallLocation
-from boilerromm.library import Game
+from boilerromm.games.downloads import Downloader
+from boilerromm.games.install import InstallLocation
+from boilerromm.romm.library import Game
 
 
 class FakeResponse:

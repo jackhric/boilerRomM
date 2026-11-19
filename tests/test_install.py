@@ -1,6 +1,6 @@
 import os
 
-from boilerromm.install import InstallLocation
+from boilerromm.games.install import InstallLocation
 
 
 def test_platform_dir_is_the_romm_slug(tmp_path):
@@ -33,7 +33,7 @@ def test_tilde_expands_to_the_given_home():
 
 
 def test_launch_file_prefers_playlist_then_cue(tmp_path):
-    from boilerromm.install import launch_file
+    from boilerromm.games.install import launch_file
     loc = InstallLocation(str(tmp_path), "/home/x")
     t = loc.target("psx", "G (USA)", single_file=False)
     os.makedirs(t.path)

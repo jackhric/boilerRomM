@@ -7,9 +7,15 @@ export function useBackendState(): State | undefined {
   useEffect(() => {
     let live = true;
     const off = onState((s) => live && setState(s));
-    getState().then((s) => live && setState(s)).catch(() => {});
+    // The backend may still be starting; ask again until it answers.
+    let retry: ReturnType<typeof setTimeout> | undefined;
+    const load = () => getState().then((s) => live && setState(s)).catch(() => {
+      if (live) retry = setTimeout(load, 2000);
+    });
+    load();
     return () => {
       live = false;
+      clearTimeout(retry);
       off();
     };
   }, []);

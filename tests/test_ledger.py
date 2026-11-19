@@ -3,13 +3,12 @@ import logging
 import os
 
 import pytest
-
-from boilerromm import ledger as L
 from boilerromm.app import App
-from boilerromm.downloads import Downloader
-from boilerromm.install import InstallLocation
-from boilerromm.ledger import Install, Ledger
-from boilerromm.library import Game
+from boilerromm.games import ledger as L
+from boilerromm.games.downloads import Downloader
+from boilerromm.games.install import InstallLocation
+from boilerromm.games.ledger import Install, Ledger
+from boilerromm.romm.library import Game
 from test_downloads import FakeClient, FakeResponse
 
 MULTI = {"fs_path": "roms/psx", "fs_name": "G (USA)", "files": [

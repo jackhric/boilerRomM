@@ -28,7 +28,7 @@ export const C = {
 } as const;
 
 export const FONT = v("font-family", '"Motiva Sans", Arial, sans-serif');
-export const EASE = "cubic-bezier(.16,.86,.43,.99)";
+const EASE = "cubic-bezier(.16,.86,.43,.99)";
 
 /** Native page gutter. */
 export const GUTTER = 38;

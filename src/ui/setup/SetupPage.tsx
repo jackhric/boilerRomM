@@ -15,7 +15,7 @@ import { FOOTER } from "../kit";
 import { Guard } from "../kit/guard";
 import { QrCode } from "../kit/qr";
 import { Wordmark } from "../kit/wordmark";
-import { BigCheck, Busy, centred, Check, column, Line, PRIMARY, SetupButton, StatusRow, Steps, T } from "./parts";
+import { BigCheck, Busy, centred, Check, column, Line, PRIMARY, SetupButton, StatusRow, Steps, T } from "../kit/big";
 
 type Step = "welcome" | "server" | "pair" | "verify" | "artwork" | "emulators" | "installing" | "ready";
 const ORDER: Step[] = ["welcome", "server", "pair", "verify", "artwork", "emulators", "installing", "ready"];

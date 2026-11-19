@@ -21,21 +21,17 @@ Settings > Storage, Uninstall, and Steam's Downloads page while it downloads.
 `main.py` is the list of calls the frontend can make; each forwards to `App`. Nothing under `py_modules/` imports
 `decky`, so the package runs in tests.
 
-| Module | Owns |
+| Where | Owns |
 | --- | --- |
-| `app.py` | `App`: builds the rest, exposes the commands, emits the events |
-| `settings.py` | the settings file: server, token, device id, ROM folder, SteamGridDB key |
-| `jsonfile.py` | the one atomic JSON writer |
-| `romm.py`, `pairing.py` | the RomM client and the device code flow |
-| `library.py` | platforms and games from RomM, each with its state from the ledger |
-| `ledger.py` | the install ledger: records, states, and the check of a record against the disk |
-| `install.py` | where a game lives on disk: the ROM folder, one subfolder per RomM platform |
-| `downloads.py` | the download queue: one at a time, per-file `.part` with resume, every change written to the ledger |
-| `shortcuts.py` | which Steam shortcut (appid) belongs to which game |
-| `sgdb.py`, `artwork.py`, `signin.py`, `cdp.py` | SteamGridDB art, its cache, and "Sign in with Steam" for the key |
-| `video.py` | trailer streams (runs the vendored `yt_dlp` from `py_modules/`; keep this file at this depth) |
-| `emulators/` | one class per emulator boilerRomM installs and runs itself: where its build comes from, its folders, its config, and the command that starts a game |
-| `releases.py`, `sevenzip.py`, `inifile.py` | fetching a release build, unpacking a `.7z`, editing an emulator's INI file |
+| `app.py` | `App`: builds the rest, takes its commands from the four `commands.py` classes below, emits the events, and resets everything |
+| `settings.py`, `jsonfile.py` | the settings file (server, token, device id, ROM folder, SteamGridDB key) and the one atomic JSON writer |
+| `romm/` | `client.py` the RomM client, `pairing.py` the device code flow, `library.py` platforms and games; `commands.py`: server address, pairing, connection check, library refresh |
+| `games/` | `ledger.py` the install records and their check against the disk, `install.py` where a game lives on disk, `downloads.py` the queue (one at a time, per-file `.part` with resume), `shortcuts.py` which Steam shortcut belongs to which game, `video.py` trailer streams (runs the vendored `yt_dlp` from `py_modules/`, found by this file's depth); `commands.py`: what is installed, download, remove, storage |
+| `sgdb/` | `client.py` SteamGridDB, `artwork.py` its cache and prefetch, `signin.py` and `cdp.py` "Sign in with Steam" for the key; `commands.py`: the key, a game's art and icon |
+| `emulators/` | one class per emulator boilerRomM installs and runs itself (`base.py` is the shape they share), with `releases.py`, `sevenzip.py`, `progress.py` for fetching a build and `inifile.py`, `xmlfile.py` for editing its config; `commands.py`: install, firmware, and the launch script of a game |
+
+Decky Loader's Python is a trimmed one: it has no `xml` package, for one. A module that the tests import fine can
+still be missing on the device.
 
 Files on the device, all under Decky's settings and runtime folders for the plugin: `settings.json`,
 `installs.json`, `shortcuts.json`, `sgdb/` (art cache), `icons/`, and `boilerromm-launch`, which every Steam
@@ -52,7 +48,7 @@ records depend on them.
 | `steam/` | every hook into Steam, behind `steam/index.ts` | `@decky/*` only |
 | `app/` | use cases joining the backend and Steam: start-up, download, remove, shortcut repair | `api`, `domain`, `steam` |
 | `ui/kit/` | shared components, tokens, art, backdrops, focus, video | `domain`, `api` types |
-| `ui/store/`, `ui/game/`, `ui/panel/` | the store pages, the game page, the Quick Access panel | `kit`, `domain`, `app`, `api` |
+| `ui/store/`, `ui/game/`, `ui/settings/`, `ui/setup/` | the store pages, the game page, the settings pages, first-run setup | `kit`, `domain`, `app`, `api` |
 | `index.tsx` | registers the routes and the panel, starts and stops `app` | `ui`, `app` |
 
 ## Checks

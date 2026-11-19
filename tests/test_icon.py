@@ -2,7 +2,6 @@ import base64
 import logging
 
 import pytest
-
 from boilerromm.app import App
 
 

@@ -6,11 +6,9 @@ import subprocess
 import tarfile
 
 import pytest
-
-from boilerromm import releases
-from boilerromm.emulators import Layout
+from boilerromm.emulators import Layout, releases
 from boilerromm.emulators.kyty import RUN, TAG, Kyty
-from boilerromm.install import Target
+from boilerromm.games.install import Target
 
 ASSET = f"{TAG}-Linux-x86_64.tar.gz"
 ASSET_URL = f"https://github.com/KytyPS5/KytyPS5/releases/download/{TAG}/{ASSET}"

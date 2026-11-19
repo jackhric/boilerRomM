@@ -12,13 +12,13 @@ export interface Row {
 
 const ROW_LIMIT = 24;
 
-export function recentRow(games: Game[]): Row | undefined {
+function recentRow(games: Game[]): Row | undefined {
   const recent = [...games].sort((a, b) => b.added_at.localeCompare(a.added_at)).slice(0, ROW_LIMIT);
   return recent.length ? { key: "recent", title: "Recently added", subtitle: "New on your RomM server", games: recent } : undefined;
 }
 
 /** "Top rated" and "On this Device", the rows below the personal ones. */
-export function laterRows(games: Game[]): Row[] {
+function laterRows(games: Game[]): Row[] {
   const rows: Row[] = [];
   const rated = topRated(games).slice(0, ROW_LIMIT);
   if (rated.length) rows.push({ key: "rated", title: "Top rated", subtitle: "Best reviewed in the library", games: rated });
@@ -43,7 +43,7 @@ function resolve(games: Game[], recs: Recommendation[]): [Game, Recommendation][
 }
 
 /** "genre: Platform" -> "Genre: Platform". */
-export function reasonText(reason: string): string {
+function reasonText(reason: string): string {
   const [kind, ...rest] = reason.split(":");
   const value = rest.join(":").trim();
   if (!value) return reason;

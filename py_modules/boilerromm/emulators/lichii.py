@@ -3,9 +3,9 @@ import os
 import re
 import shutil
 
-from .. import inifile
-from ..releases import Source
+from . import inifile
 from .base import Command, Emulator, Firmware
+from .releases import Source
 
 # Lichii seeds a few renderer settings only when it creates qt-config.ini itself (Config::SetUpIni in
 # src/frontend_common/config.cpp). configure() writes the file first, so SEEDED repeats them: check both when

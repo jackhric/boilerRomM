@@ -6,9 +6,7 @@ import zipfile
 import zlib
 
 import pytest
-
-from boilerromm import releases
-from boilerromm.emulators import Layout
+from boilerromm.emulators import Layout, releases
 from boilerromm.emulators import retroarch as module
 from boilerromm.emulators.retroarch import BIOS, CORES, CORES_URL, NEEDS_BIOS, TAG, ArchiveError, RetroArch, extract_7z, read_cfg, write_cfg
 

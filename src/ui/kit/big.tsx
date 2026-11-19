@@ -1,4 +1,4 @@
-// The pieces the setup screens are drawn from. Sizes are the ones chosen in the setup design: large, for a couch.
+// Couch-sized pieces for full-page screens (setup, error states). Sizes are the ones chosen in the setup design.
 import { DialogButton, Spinner } from "@decky/ui";
 import { CSSProperties, ReactNode } from "react";
 

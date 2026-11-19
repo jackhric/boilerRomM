@@ -8,8 +8,8 @@ import os
 import shutil
 from dataclasses import dataclass
 
-from .. import releases
-from ..install import Target, launch_file
+from ..games.install import Target, launch_file
+from . import releases
 
 
 @dataclass(frozen=True)
@@ -42,6 +42,22 @@ class Command:
     """What a Steam shortcut runs to start a game."""
     argv: list[str]
     env: dict[str, str]
+
+
+def link_dir(link: str, target: str) -> None:
+    """Makes `link` a link to the folder `target`; a folder the emulator already filled there is left where it works."""
+    os.makedirs(target, exist_ok=True)
+    os.makedirs(os.path.dirname(link), exist_ok=True)
+    if os.path.islink(link):
+        if os.readlink(link) == target:
+            return
+        os.unlink(link)
+    elif os.path.isdir(link):
+        try:
+            os.rmdir(link)
+        except OSError:
+            return
+    os.symlink(target, link)
 
 
 _md5: dict[tuple[str, int, int], str] = {}

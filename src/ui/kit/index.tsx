@@ -89,7 +89,7 @@ interface TileProps {
 }
 
 /** "ON THIS DEVICE" like the store's "IN LIBRARY" tag, or the download's progress along the bottom edge. */
-export function TileStatus({ game, progress }: { game: Game; progress?: Progress }) {
+function TileStatus({ game, progress }: { game: Game; progress?: Progress }) {
   if (isBusy(game)) {
     return (
       <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 4, background: "rgba(0,0,0,.6)" }}>
@@ -177,7 +177,7 @@ export const WideCapsule = memo(function WideCapsule({ game, progress, width = W
   );
 });
 
-export function SectionHeader({ children, subtitle, size = 22, gutter = GUTTER, right }: { children: ReactNode; subtitle?: string; size?: number; gutter?: number; right?: ReactNode }) {
+function SectionHeader({ children, subtitle, size = 22, gutter = GUTTER, right }: { children: ReactNode; subtitle?: string; size?: number; gutter?: number; right?: ReactNode }) {
   return (
     <div style={{ display: "flex", alignItems: "baseline", gap: 12, padding: `0 ${gutter}px` }}>
       <div style={{ fontSize: size, fontWeight: size >= 22 ? 600 : 500, lineHeight: "28px", color: "#fff" }}>{children}</div>
