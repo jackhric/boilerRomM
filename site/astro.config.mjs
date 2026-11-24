@@ -2,6 +2,7 @@ import sitemap from '@astrojs/sitemap';
 import starlight from '@astrojs/starlight';
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'astro/config';
+import { statisticsHead } from './src/statistics.mjs';
 import { fileURLToPath } from 'node:url';
 
 const repo = 'https://github.com/jackhric/boilerRomM';
@@ -26,6 +27,8 @@ function repoDocLinks() {
   };
 }
 
+const building = process.argv.includes('build');
+
 export default defineConfig({
   site: 'https://jackhric.github.io',
   base: '/boilerRomM',
@@ -41,6 +44,7 @@ export default defineConfig({
       lastUpdated: true,
       customCss: ['./src/styles/docs.css'],
       head: [
+        ...(building ? statisticsHead : []),
         { tag: 'meta', attrs: { property: 'og:image', content: ogImage } },
         { tag: 'meta', attrs: { property: 'og:image:width', content: '1200' } },
         { tag: 'meta', attrs: { property: 'og:image:height', content: '630' } },
