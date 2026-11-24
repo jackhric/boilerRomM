@@ -1,7 +1,7 @@
 <h1 align="center">boilerRomM</h1>
 
 <p align="center">
-  <b>Your RomM library as a store in Steam Game Mode. Browse, download and play, with the emulators set up for you.</b>
+  <p>Your RomM library as a store in Steam's Big Picture interface</p>
 </p>
 
 <p align="center">
