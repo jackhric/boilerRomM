@@ -1,7 +1,7 @@
 <h1 align="center">boilerRomM</h1>
 
 <p align="center">
-  <p>Your RomM library as a store in Steam's Big Picture interface</p>
+  Your RomM library as a store in Steam's Big Picture interface
 </p>
 
 <p align="center">
